@@ -24,7 +24,6 @@
     <module>domain</module>
     <module>tenant</module>
     <module>web</module>
-    <module>workflow</module>
   </modules>
 
   <packaging>pom</packaging>
