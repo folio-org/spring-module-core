@@ -56,9 +56,24 @@ public class MockMvcConstant {
   public static final String APPLICATION = "application";
 
   /**
+   * Provide generic Boolean for use as a false value.
+   */
+  public static final Boolean BOOL_FALSE = false;
+
+  /**
+   * Provide generic Boolean for use as a true value.
+   */
+  public static final Boolean BOOL_TRUE = true;
+
+  /**
    * Provide generic string for use as an ID.
    */
   public static final String ID = "id";
+
+  /**
+   * Provide generic Integer for use as a value.
+   */
+  public static final Integer INT_VALUE = 20;
 
   /**
    * Provide empty JSON array.
@@ -99,6 +114,11 @@ public class MockMvcConstant {
    * Provide OKAPI URL HTTP Header.
    */
   public static final String OKAPI_URL = "X-Okapi-Url";
+
+  /**
+   * Provide generic Long for use as a value.
+   */
+  public static final Long LONG_VALUE = 100L;
 
   /**
    * Provide a NULL string.
