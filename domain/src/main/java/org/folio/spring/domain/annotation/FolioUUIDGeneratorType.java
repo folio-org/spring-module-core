@@ -6,11 +6,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.folio.spring.domain.generator.CustomUUIDGenerator;
+import org.folio.spring.domain.generator.FolioUUIDGenerator;
 import org.hibernate.annotations.IdGeneratorType;
 
-@IdGeneratorType(CustomUUIDGenerator.class)
+@IdGeneratorType(FolioUUIDGenerator.class)
 @Retention(RUNTIME)
 @Target({ METHOD, FIELD })
-public @interface UUIDGenerator {
+public @interface FolioUUIDGeneratorType {
 }
