@@ -2,9 +2,8 @@ package org.folio.spring.domain.generator;
 
 import java.io.Serializable;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.id.UUIDGenerator;
 
-public class CustomUUIDGenerator extends UUIDGenerator {
+public class CustomUUIDGenerator extends SpringUUIDGenerator {
 
   private static final long serialVersionUID = -608780582196754676L;
 
