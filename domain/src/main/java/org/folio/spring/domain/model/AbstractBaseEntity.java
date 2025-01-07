@@ -2,17 +2,17 @@ package org.folio.spring.domain.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-
-import org.hibernate.annotations.GenericGenerator;
+import org.folio.spring.domain.annotation.FolioUUIDGeneratorType;
 
 @MappedSuperclass
 public abstract class AbstractBaseEntity {
 
   @Id
-  @GeneratedValue(generator = "UUID")
-  @GenericGenerator(name = "UUID", strategy = "org.folio.spring.domain.generator.CustomUUIDGenerator")
+  @FolioUUIDGeneratorType
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(updatable = false, nullable = false, insertable = true)
   private String id;
 
