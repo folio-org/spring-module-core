@@ -44,8 +44,8 @@ public class HttpService {
     messageConverters.add(new ObjectPlainTextConverter(StandardCharsets.UTF_8));
 
     this.restTemplate = restTemplateBuilder
-        .setConnectTimeout(Duration.ofSeconds(connectionTimeout))
-        .setReadTimeout(Duration.ofSeconds(readTimeout))
+        .connectTimeout(Duration.ofSeconds(connectionTimeout))
+        .readTimeout(Duration.ofSeconds(readTimeout))
         .additionalMessageConverters(messageConverters)
         .build();
   }
