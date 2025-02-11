@@ -2,6 +2,7 @@ bin/
 target/
 .settings/
 !.mvn/wrapper/maven-wrapper.jar
+/target_test-classes/
 
 ### STS ###
 .apt_generated

@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.enhanced.AccessCallback;
 import org.hibernate.id.enhanced.DatabaseStructure;
 import org.hibernate.id.enhanced.Optimizer;
@@ -51,7 +52,7 @@ class FolioUUIDGeneratorTest {
 
   @Test
   void generateWorksTest() {
-    when(persister.getIdentifier(any(), any())).thenReturn(UUID);
+    when(persister.getIdentifier(any(), any(SharedSessionContractImplementor.class))).thenReturn(UUID);
 
     Object result = folioUUIDGenerator.generate(session, folioUUIDGenerator);
 
@@ -60,7 +61,7 @@ class FolioUUIDGeneratorTest {
 
   @Test
   void generateWorksWithNullIdentifierTest() {
-    when(persister.getIdentifier(any(), any())).thenReturn(null);
+    when(persister.getIdentifier(any(), any(SharedSessionContractImplementor.class))).thenReturn(null);
     when(databaseStructure.buildCallback(any())).thenReturn(accessCallback);
     when(optimizer.generate(any())).thenReturn(JSON_OBJECT);
 
