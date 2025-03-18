@@ -13,5 +13,5 @@ Spring module core libraries for Spring development with FOLIO.
 
 ### Issue tracker
 
-See project [FOLIO](https://issues.folio.org/browse/FOLIO)
+See project [SPRNGCORE](https://folio-org.atlassian.net/browse/SPRNGCORE)
 at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker/).
