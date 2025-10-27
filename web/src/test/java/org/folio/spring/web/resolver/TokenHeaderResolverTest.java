@@ -1,7 +1,6 @@
 package org.folio.spring.web.resolver;
 
 import static org.folio.spring.test.mock.MockMvcConstant.ACCESS_TOKEN_NAME;
-import static org.folio.spring.test.mock.MockMvcConstant.OKAPI_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
