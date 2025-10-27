@@ -8,7 +8,6 @@ import java.util.Optional;
 import org.folio.spring.domain.controller.exception.SchemaIOException;
 import org.folio.spring.domain.service.RamlsService;
 import org.folio.spring.web.utility.RequestHeaderUtility;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +26,6 @@ public class RamlsController {
 
   private final RamlsService ramlsService;
 
-  @Autowired
   public RamlsController(RamlsService ramlsService) {
     this.ramlsService = ramlsService;
   }
