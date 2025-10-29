@@ -8,7 +8,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
 import org.folio.spring.domain.controller.exception.SchemaNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
@@ -23,7 +22,6 @@ public class RamlsService {
 
   private final ResourcePatternResolver resolver;
 
-  @Autowired
   public RamlsService(ResourcePatternResolver resolver) {
       this.resolver = resolver;
   }

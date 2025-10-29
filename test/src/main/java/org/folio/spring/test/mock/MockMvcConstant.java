@@ -26,6 +26,11 @@ public class MockMvcConstant {
   private static final Logger logger = LoggerFactory.getLogger(MockMvcConstant.class);
 
   /**
+   * Provide the FOLIO Access Token cookie name.
+   */
+  public static final String ACCESS_TOKEN_NAME = "folioAccessToken";
+
+  /**
    * Provide "application/json" Content-Type.
    */
   public static final String APP_JSON = "application/json";

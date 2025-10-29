@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.folio.spring.domain.controller.exception.SchemaNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ public class JsonSchemasService {
 
   private final ObjectMapper mapper;
 
-  @Autowired
   public JsonSchemasService(ResourcePatternResolver resolver, ObjectMapper mapper) {
       this.resolver = resolver;
       this.mapper = mapper;
