@@ -1,7 +1,5 @@
 package org.folio.spring.domain.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +9,12 @@ import org.folio.spring.domain.controller.exception.SchemaNotFoundException;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
+/**
+ * JSON Schema Service.
+ */
 @Service
 public class JsonSchemasService {
 
@@ -24,11 +27,24 @@ public class JsonSchemasService {
 
   private final ObjectMapper mapper;
 
+  /**
+   * Initializer.
+   *
+   * @param resolver The pattern resolver.
+   * @param mapper The object mapper.
+   */
   public JsonSchemasService(ResourcePatternResolver resolver, ObjectMapper mapper) {
       this.resolver = resolver;
       this.mapper = mapper;
   }
 
+  /**
+   * Get the Schema.
+   *
+   * @return The schema.
+   *
+   * @throws IOException On error.
+   */
   public List<String> getSchemas() throws IOException {
     List<String> schemas = new ArrayList<>();
     Resource[] resources = resolver.getResources("classpath:ramls/*.json");
@@ -38,6 +54,16 @@ public class JsonSchemasService {
     return schemas;
   }
 
+  /**
+   * Get the Schema by path.
+   *
+   * @param path The path to match.
+   * @param okapiUrl The OKAPI URL.
+   *
+   * @return The schema.
+   *
+   * @throws IOException On error.
+   */
   public String getSchemaByPath(String path, String okapiUrl) throws IOException {
     Resource resource = resolver.getResource("classpath:ramls/" + path);
     if (resource.exists()) {

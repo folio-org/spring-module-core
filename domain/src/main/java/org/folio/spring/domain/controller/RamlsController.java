@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller for the ramls.
+ */
 @RestController
 @RequestMapping("/_/ramls")
 public class RamlsController {
@@ -26,10 +29,25 @@ public class RamlsController {
 
   private final RamlsService ramlsService;
 
+  /**
+   * Constrictor.
+   *
+   * @param ramlsService The ramls service.
+   */
   public RamlsController(RamlsService ramlsService) {
     this.ramlsService = ramlsService;
   }
 
+  /**
+   * Make a request to OKAPI to get the ramls.
+   *
+   * @param response The servlet response.
+   * @param path The path.
+   * @param okapiUrl The OKAPI URL.
+   * @param accept The HTTP accept header.
+   *
+   * @return The HTTP response.
+   */
   @GetMapping
   public ResponseEntity<Object> getRamls(
     HttpServletResponse response,

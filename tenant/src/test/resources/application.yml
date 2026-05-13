@@ -1,8 +1,9 @@
 info.build.artifact: mod-example
 
 logging:
-  path: logs
-  file: ${logging.file.path}/spring-tenant-tests.log
+  file:
+    path: logs
+    name: ${logging.file.path}/spring-tenant-tests.log
   level:
     org:
       folio: WARN
@@ -28,7 +29,6 @@ spring:
       idleTimeout: 600000
       maxLifetime: 1800000
       maximumPoolSize: 16
-    platform: h2
     url: jdbc:h2:mem:AZ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL;DATABASE_TO_LOWER=true;DEFAULT_NULL_ORDERING=HIGH
     driverClassName: org.h2.Driver
     username: folio
@@ -46,6 +46,8 @@ spring:
     show-sql: false
   profiles:
     active: default
+  sql:
+    init.platform: h2
   thymeleaf:
     mode: TEXT
     suffix: .sql

@@ -12,6 +12,9 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
+/**
+ * Ramls Service.
+ */
 @Service
 public class RamlsService {
 
@@ -22,10 +25,22 @@ public class RamlsService {
 
   private final ResourcePatternResolver resolver;
 
+  /**
+   * Constructor.
+   *
+   * @param resolver The resolver.
+   */
   public RamlsService(ResourcePatternResolver resolver) {
       this.resolver = resolver;
   }
 
+  /**
+   * Get the ramls.
+   *
+   * @return The ramls.
+   *
+   * @throws IOException On error.
+   */
   public List<String> getRamls() throws IOException {
     List<String> ramls = new ArrayList<>();
     Resource[] resources = resolver.getResources("classpath:ramls/*.raml");
@@ -35,6 +50,16 @@ public class RamlsService {
     return ramls;
   }
 
+  /**
+   * Get the ramls by path.
+   *
+   * @param path The path to match.
+   * @param okapiUrl The OKAPI URL.
+   *
+   * @return The ramls.
+   *
+   * @throws IOException On error.
+   */
   public String getRamlByPath(String path, String okapiUrl) throws IOException {
     Resource resource = resolver.getResource("classpath:ramls/" + path);
     if (resource.exists()) {

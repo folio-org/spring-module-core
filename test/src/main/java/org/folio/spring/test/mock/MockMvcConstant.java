@@ -1,7 +1,5 @@
 package org.folio.spring.test.mock;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +9,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * A utility intended to assist in mocking MVC requests during testing, focusing on constants.
@@ -267,7 +268,7 @@ public class MockMvcConstant {
    *
    * HttpHeaders provides a cleanly initialized MultiValueMap for use as an empty map.
    */
-  public static final MultiValueMap<String, String> NO_PARAM = new HttpHeaders();
+  public static final MultiValueMap<String, String> NO_PARAM = CollectionUtils.toMultiValueMap(Map.of());
 
   /**
    * Provide a set of parameters containing the path parameter and its values.
@@ -293,9 +294,9 @@ public class MockMvcConstant {
     String responseAsJson = "";
 
     try {
-      ObjectMapper objectMapper = new ObjectMapper();
+      ObjectMapper objectMapper = JsonMapper.builder().build();
       responseAsJson = objectMapper.writeValueAsString(STRING_LIST);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       logger.error("Initialization of static string list as JSON failed.", e);
     }
 

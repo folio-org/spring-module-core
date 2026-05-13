@@ -11,11 +11,27 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Controller advice for multiple interface.
+ */
 @RestControllerAdvice
 public class MultipleInterfaceAdvice {
 
   private static final Logger logger = LoggerFactory.getLogger(MultipleInterfaceAdvice.class);
 
+  /**
+   * Default initializer.
+   */
+  public MultipleInterfaceAdvice() {
+  }
+
+  /**
+   * Handle SchemaNotFoundException.
+   *
+   * @param exception The exception.
+   *
+   * @return The constructed HTTP error JSON response.
+   */
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(SchemaNotFoundException.class)
   public ResponseErrors handleSchemaNotFoundException(SchemaNotFoundException exception) {
@@ -23,6 +39,13 @@ public class MultipleInterfaceAdvice {
     return ErrorUtility.buildError(exception, HttpStatus.NOT_FOUND);
   }
 
+  /**
+   * Handle SchemaIOException.
+   *
+   * @param exception The exception.
+   *
+   * @return The constructed HTTP error JSON response.
+   */
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(SchemaIOException.class)
   public ResponseErrors handleSchemaIOException(SchemaIOException exception) {

@@ -7,27 +7,32 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.util.ReflectionTestUtils.getField;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 class EventTest {
 
   @InjectMocks
+  private Event event;
+
   private ObjectMapper mapper;
 
-  @InjectMocks
-  private Event event;
+  @BeforeEach
+  void beforeEach() {
+    mapper = JsonMapper.builder().build();
+  }
 
   @Test
   void getTriggerIdWorksTest() {
@@ -117,7 +122,7 @@ class EventTest {
   }
 
   @Test
-  void getPayloadWorksTest() throws JsonMappingException, JsonProcessingException {
+  void getPayloadWorksTest() throws JacksonException {
     JsonNode payload = mapper.readValue(JSON_OBJECT, JsonNode.class);
     setField(event, "payload", payload);
 
@@ -125,7 +130,7 @@ class EventTest {
   }
 
   @Test
-  void setPayloadWorksTest() throws JsonMappingException, JsonProcessingException {
+  void setPayloadWorksTest() throws JacksonException {
     JsonNode payload = mapper.readValue(JSON_OBJECT, JsonNode.class);
 
     setField(event, "payload", null);
