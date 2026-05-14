@@ -15,6 +15,7 @@ public class FolioUUIDGenerator extends SequenceStyleGenerator {
    * Default constructor.
    */
   public FolioUUIDGenerator() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   @Override

@@ -16,12 +16,14 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * A utility intended to assist in mocking MVC requests during testing, focusing on constants.
  */
+@SuppressWarnings("java:S2386") // SonarQube is intended to be public static and as a utility library.
 public class MockMvcConstant {
 
   /**
    * Private initializer as per java:S1118.
    */
   private MockMvcConstant() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   private static final Logger logger = LoggerFactory.getLogger(MockMvcConstant.class);

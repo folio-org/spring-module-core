@@ -18,6 +18,7 @@ public class JacksonConfiguration {
    * Default constructor.
    */
   public JacksonConfiguration() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   @Bean

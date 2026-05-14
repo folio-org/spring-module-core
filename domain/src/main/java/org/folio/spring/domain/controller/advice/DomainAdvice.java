@@ -23,6 +23,7 @@ public class DomainAdvice {
    * Default initializer.
    */
   public DomainAdvice() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   /**

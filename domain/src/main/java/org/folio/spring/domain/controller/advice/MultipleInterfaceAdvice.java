@@ -23,6 +23,7 @@ public class MultipleInterfaceAdvice {
    * Default initializer.
    */
   public MultipleInterfaceAdvice() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   /**

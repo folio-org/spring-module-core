@@ -22,7 +22,8 @@ public abstract class AbstractBaseEntity {
   /**
    * Default initializer.
    */
-  public AbstractBaseEntity() {
+  protected AbstractBaseEntity() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   /**
