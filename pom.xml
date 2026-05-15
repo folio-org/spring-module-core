@@ -36,7 +36,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <spring-module-core.version>2.1.0-SNAPSHOT</spring-module-core.version>
+    <spring-module-core.version>2.2.0-SNAPSHOT</spring-module-core.version>
     <springdoc.version>3.0.3</springdoc.version>
   </properties>
 
