@@ -16,6 +16,7 @@
   <properties>
     <!-- Sonar Cloud Configuration -->
     <sonar.exclusions>**/mock/*.java</sonar.exclusions>
+    <sonar.coverage.exclusions>**/mock/*.java</sonar.coverage.exclusions>
   </properties>
 
   <dependencies>
