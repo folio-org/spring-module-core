@@ -23,7 +23,6 @@ public class MockMvcConstant {
    * Private initializer as per java:S1118.
    */
   private MockMvcConstant() {
-    // Must exist, even if empty, to comply with standard JavaDocs practices.
   }
 
   private static final Logger logger = LoggerFactory.getLogger(MockMvcConstant.class);
