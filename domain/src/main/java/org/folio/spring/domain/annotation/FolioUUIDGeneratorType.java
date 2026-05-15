@@ -9,6 +9,9 @@ import java.lang.annotation.Target;
 import org.folio.spring.domain.generator.FolioUUIDGenerator;
 import org.hibernate.annotations.IdGeneratorType;
 
+/**
+ * Type for the FOLIO UUID Generator.
+ */
 @IdGeneratorType(FolioUUIDGenerator.class)
 @Retention(RUNTIME)
 @Target({ METHOD, FIELD })
