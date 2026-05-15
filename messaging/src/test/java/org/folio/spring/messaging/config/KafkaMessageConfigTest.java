@@ -7,13 +7,12 @@ import static org.mockito.Mockito.verify;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -31,10 +30,10 @@ class KafkaMessageConfigTest {
   @Test
   void kafkaListenerContainerFactoryTest() {
     Map<String, Object> props = new HashMap<>();
-    doReturn(props).when(kafkaProperties).buildConsumerProperties(null);
+    doReturn(props).when(kafkaProperties).buildConsumerProperties();
 
     assertNotNull(kafkaMessageConfig.kafkaListenerContainerFactory(kafkaProperties));
-    verify(kafkaProperties, times(1)).buildConsumerProperties(null);
+    verify(kafkaProperties, times(1)).buildConsumerProperties();
   }
 
 }
