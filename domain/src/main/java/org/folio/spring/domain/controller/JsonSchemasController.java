@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller for the JSON Schemas.
+ */
 @RestController
 @RequestMapping("/_/jsonSchemas")
 public class JsonSchemasController {
@@ -25,17 +28,29 @@ public class JsonSchemasController {
 
   private final JsonSchemasService jsonSchemasService;
 
+  /**
+   * Constructor.
+   *
+   * @param jsonSchemasService The JSON schema service.
+   */
   public JsonSchemasController(JsonSchemasService jsonSchemasService) {
       this.jsonSchemasService = jsonSchemasService;
   }
 
+  /**
+   * Make a request to OKAPI to get the schemas.
+   *
+   * @param path The path.
+   * @param okapiUrl The OKAPI URL.
+   * @param accept The HTTP accept header.
+   *
+   * @return The HTTP response.
+   */
   @GetMapping
   public ResponseEntity<Object> getSchemas(
-  // @formatter:off
     @RequestParam(value = "path", required = false) Optional<String> path,
     @RequestHeader(value = "x-okapi-url", required = true) String okapiUrl,
     @RequestHeader(value = "accept", required = false) String accept
-  // @formatter:on
   ) {
     try {
       if (path.isPresent()) {

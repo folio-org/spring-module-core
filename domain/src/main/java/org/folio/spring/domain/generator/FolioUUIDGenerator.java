@@ -4,9 +4,19 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 
+/**
+ * Generate FOLIO UUIDs.
+ */
 public class FolioUUIDGenerator extends SequenceStyleGenerator {
 
   private static final long serialVersionUID = -608780582196754676L;
+
+  /**
+   * Default constructor.
+   */
+  public FolioUUIDGenerator() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
+  }
 
   @Override
   public Object generate(SharedSessionContractImplementor session, Object object) throws HibernateException {

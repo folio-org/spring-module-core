@@ -1,6 +1,7 @@
 logging:
-  path: logs
-  file: ${logging.file.path}/spring-domain-tests.log
+  file:
+    path: logs
+    name: ${logging.file.path}/spring-domain-tests.log
   level:
     org:
       folio: WARN

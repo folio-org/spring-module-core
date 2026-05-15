@@ -11,11 +11,28 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Controller advice for domain.
+ */
 @RestControllerAdvice
 public class DomainAdvice {
 
   private static final Logger logger = LoggerFactory.getLogger(DomainAdvice.class);
 
+  /**
+   * Default initializer.
+   */
+  public DomainAdvice() {
+    // Must exist, even if empty, to comply with standard JavaDocs practices.
+  }
+
+  /**
+   * Handle ConstraintViolationException.
+   *
+   * @param exception The exception.
+   *
+   * @return The constructed HTTP error JSON response.
+   */
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseErrors handleConstraintViolationException(ConstraintViolationException exception) {
@@ -23,6 +40,13 @@ public class DomainAdvice {
     return ErrorUtility.buildError(exception, HttpStatus.BAD_REQUEST);
   }
 
+  /**
+   * Handle DataIntegrityViolationException.
+   *
+   * @param exception The exception.
+   *
+   * @return The constructed HTTP error JSON response.
+   */
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseErrors handleDataIntegrityViolationException(DataIntegrityViolationException exception) {
