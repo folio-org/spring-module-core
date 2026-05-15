@@ -16,7 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * A utility intended to assist in mocking MVC requests during testing, focusing on constants.
  */
-@SuppressWarnings("java:S2386") // SonarQube is intended to be public static and as a utility library.
+@SuppressWarnings("java:S2386") // Suppress "Mutable fields should not be "public static"" because this is intended to be public static and as a utility library for unit tests.
 public class MockMvcConstant {
 
   /**
