@@ -19,3 +19,4 @@ jobs:
     with:
       do-docker: false
       publish-module-descriptor: false
+      java-version: '25'
