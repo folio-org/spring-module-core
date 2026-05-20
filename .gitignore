@@ -4,6 +4,10 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 /target_test-classes/
 
+## Maven Release Files
+pom.xml.releaseBackup
+release.properties
+
 ### STS ###
 .apt_generated
 .classpath
