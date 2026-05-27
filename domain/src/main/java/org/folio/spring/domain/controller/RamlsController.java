@@ -51,9 +51,9 @@ public class RamlsController {
   @GetMapping
   public ResponseEntity<Object> getRamls(
     HttpServletResponse response,
-    @RequestParam(value = "path", required = false) Optional<String> path,
+    @RequestParam(required = false) Optional<String> path,
     @RequestHeader(value = "x-okapi-url", required = true) String okapiUrl,
-    @RequestHeader(value = "accept", required = false) String accept
+    @RequestHeader(required = false) String accept
   ) {
     try {
       if (path.isPresent()) {

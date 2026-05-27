@@ -14,6 +14,7 @@ import java.net.URL;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.folio.spring.domain.controller.exception.SchemaNotFoundException;
+import org.folio.spring.test.helper.MapperHelper;
 import org.folio.spring.test.mock.MockMvcConstant;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(SpringExtension.class)
@@ -42,11 +42,11 @@ class JsonSchemasServiceTest {
   @InjectMocks
   private JsonSchemasService jsonSchemasService;
 
-  private ObjectMapper mapper;
+  private JsonMapper mapper;
 
   @BeforeEach
   void beforeEach() {
-    mapper = JsonMapper.builder().build();
+    mapper = MapperHelper.build();
 
     jsonSchemasService = new JsonSchemasService(resolver, mapper);
   }
@@ -78,7 +78,7 @@ class JsonSchemasServiceTest {
   }
 
   @Test
-  void getSchemaByPathThrowsSchemaNotFoundExceptionTest() throws IOException {
+  void getSchemaByPathThrowsSchemaNotFoundExceptionTest() {
     when(resource.exists()).thenReturn(false);
     when(resolver.getResource(anyString())).thenReturn(resource);
 

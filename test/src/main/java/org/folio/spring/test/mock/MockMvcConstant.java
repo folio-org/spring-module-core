@@ -3,6 +3,7 @@ package org.folio.spring.test.mock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.folio.spring.test.helper.MapperHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -10,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -295,8 +295,8 @@ public class MockMvcConstant {
     String responseAsJson = "";
 
     try {
-      ObjectMapper objectMapper = JsonMapper.builder().build();
-      responseAsJson = objectMapper.writeValueAsString(STRING_LIST);
+      final JsonMapper mapper = MapperHelper.build();
+      responseAsJson = mapper.writeValueAsString(STRING_LIST);
     } catch (JacksonException e) {
       logger.error("Initialization of static string list as JSON failed.", e);
     }
