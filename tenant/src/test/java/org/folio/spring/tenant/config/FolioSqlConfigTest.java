@@ -26,7 +26,7 @@ class FolioSqlConfigTest {
 
     setField(folioConfig.getSql(), SCHEMA, VALUE);
 
-    assertEquals(folioConfig.getSql().getSchema(), VALUE);
+    assertEquals(VALUE, folioConfig.getSql().getSchema());
   }
 
   /**
@@ -39,7 +39,7 @@ class FolioSqlConfigTest {
 
     folioConfig.getSql().setSchema(VALUE);
 
-    assertEquals(getField(folioConfig.getSql(), SCHEMA), VALUE);
+    assertEquals(VALUE, getField(folioConfig.getSql(), SCHEMA));
   }
 
 }
