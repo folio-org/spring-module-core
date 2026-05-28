@@ -25,6 +25,17 @@ public class MapperHelper {
    * @return The built mapper.
    */
   public static JsonMapper build() {
+    return construct().build();
+  }
+
+  /**
+   * Construct the JsonMapper without building it.
+   *
+   * Use this to customize the defaults before changing.
+   *
+   * @return The mapper builder.
+   */
+  public static JsonMapper.Builder construct() {
     return JsonMapper
     .builderWithJackson2Defaults()
     .configure(DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY, false)
@@ -36,8 +47,7 @@ public class MapperHelper {
       .withValueInclusion(JsonInclude.Include.NON_NULL)
       .withContentInclusion(JsonInclude.Include.NON_NULL)
     )
-    .findAndAddModules()
-    .build();
+    .findAndAddModules();
   }
 
 }
