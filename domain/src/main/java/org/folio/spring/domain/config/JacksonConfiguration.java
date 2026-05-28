@@ -1,15 +1,16 @@
 package org.folio.spring.domain.config;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.core.StreamReadFeature;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Jackson Confoguration.
+ * Jackson Configuration.
  */
 @Configuration
 public class JacksonConfiguration {
@@ -22,11 +23,19 @@ public class JacksonConfiguration {
   }
 
   @Bean
-  ObjectMapper objectMapper() {
-    return JsonMapper.builder()
-      .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
-      .enable(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES)
-      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+  JsonMapper jsonMapper() {
+    return JsonMapper
+      .builderWithJackson2Defaults()
+      .configure(DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY, false)
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .configure(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true)
+      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+      .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
+      .changeDefaultPropertyInclusion(incl -> incl
+        .withValueInclusion(JsonInclude.Include.NON_NULL)
+        .withContentInclusion(JsonInclude.Include.NON_NULL)
+      )
+      .findAndAddModules()
       .build();
   }
 }

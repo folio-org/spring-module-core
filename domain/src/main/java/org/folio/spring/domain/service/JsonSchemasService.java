@@ -10,7 +10,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * JSON Schema Service.
@@ -25,7 +25,7 @@ public class JsonSchemasService {
 
   private final ResourcePatternResolver resolver;
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
 
   /**
    * Initializer.
@@ -33,7 +33,7 @@ public class JsonSchemasService {
    * @param resolver The pattern resolver.
    * @param mapper The object mapper.
    */
-  public JsonSchemasService(ResourcePatternResolver resolver, ObjectMapper mapper) {
+  public JsonSchemasService(ResourcePatternResolver resolver, JsonMapper mapper) {
       this.resolver = resolver;
       this.mapper = mapper;
   }
