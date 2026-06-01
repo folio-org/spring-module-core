@@ -37,17 +37,17 @@ public class MapperHelper {
    */
   public static JsonMapper.Builder construct() {
     return JsonMapper
-    .builderWithJackson2Defaults()
-    .configure(DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY, false)
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    .configure(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true)
-    .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-    .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
-    .changeDefaultPropertyInclusion(incl -> incl
-      .withValueInclusion(JsonInclude.Include.NON_NULL)
-      .withContentInclusion(JsonInclude.Include.NON_NULL)
-    )
-    .findAndAddModules();
+      .builderWithJackson2Defaults()
+      .configure(DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY, false)
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .configure(MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true)
+      .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+      .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
+      .changeDefaultPropertyInclusion(incl -> incl
+        .withValueInclusion(JsonInclude.Include.NON_NULL)
+        .withContentInclusion(JsonInclude.Include.NON_NULL)
+      )
+      .findAndAddModules();
   }
 
 }
