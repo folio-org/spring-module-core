@@ -37,7 +37,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-module-core.version>2.2.0-SNAPSHOT</spring-module-core.version>
-    <springdoc.version>3.0.3</springdoc.version>
+    <springdoc.version>3.1.0</springdoc.version>
   </properties>
 
   <dependencyManagement>
@@ -57,7 +57,7 @@
       <dependency>
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
-        <version>42.7.11</version>
+        <version>42.7.13</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
