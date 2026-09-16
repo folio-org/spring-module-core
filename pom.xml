@@ -12,7 +12,7 @@
 
   <groupId>org.folio</groupId>
   <artifactId>spring-module-core</artifactId>
-  <version>2.1.1-SNAPSHOT</version>
+  <version>2.1.2-SNAPSHOT</version>
 
   <name>Spring Okapi Module Core</name>
   <description>Okapi module core for Spring Boot development</description>

@@ -1,3 +1,8 @@
+## 2.1.1 2026-09-116
+
+* [SPRNGCORE-34](https://folio-org.atlassian.net/browse/SPRNGCORE-34): Ensure JsonMapper creates proper time stamps for Instant.
+
+
 ## 2.1.0 2026-05-19
 
 * [SPRNGCORE-27](https://folio-org.atlassian.net/browse/SPRNGCORE-27) Upgrade spring-boot 3.4.13, commons-io 2.22.0, org.postgresql 42.7.11, com.h2database 2.4.240, maven-compiler-plugin 3.14.1.
