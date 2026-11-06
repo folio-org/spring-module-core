@@ -60,7 +60,7 @@ public class SchemaService {
     final String schemaName = String.format("%s_%s", tenant, baseSchema).replace("-", "_").toLowerCase(Locale.ROOT);
 
     if (!SCHEMA_REGEXP.matcher(schemaName).matches()) {
-      throw new IllegalArgumentException("Illegal character in schema name: " + baseSchema);
+      throw new IllegalArgumentException("Illegal character in schema name: " + schemaName);
     }
 
     return schemaName;
