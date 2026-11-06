@@ -4,7 +4,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * Provide tenant specific configuration.
+ * Tenant-specific configuration properties, bound from the {@code folio}
+ * namespace.
  */
 @Component
 @ConfigurationProperties("folio")
@@ -30,8 +31,10 @@ public class FolioConfig {
     this.sql = sql;
   }
 
-  @ConfigurationProperties("folio.sql")
-  public class FolioSqlConfig {
+  /**
+   * SQL-specific configuration properties, bound from {@code folio.sql}.
+   */
+  public static class FolioSqlConfig {
 
     private String schema;
 
