@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.folio.spring.tenant.config.FolioConfig;
 import org.folio.spring.tenant.properties.BuildInfoProperties;
+import org.folio.spring.tenant.properties.TenantProperties;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -15,8 +17,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(classes = SchemaService.class)
-@EnableConfigurationProperties(value = { BuildInfoProperties.class, FolioConfig.class })
-@TestPropertySource(properties = "info.build.artifact=mod-Baz")
+@EnableConfigurationProperties(value = { BuildInfoProperties.class, FolioConfig.class, TenantProperties.class })
+@TestPropertySource(properties = {
+     "info.build.artifact=mod-Baz",
+     "tenant.default-tenant=FooBar321"
+ })
 class SchemaServiceTest {
 
   @Autowired
@@ -31,5 +36,37 @@ class SchemaServiceTest {
   @ValueSource(strings = { "ä", "?", "abc+xyz", "a1." })
   void invalidSchema(String tenant) {
     assertThrows(IllegalArgumentException.class, () -> schemaService.getSchema(tenant));
+  }
+
+  @Test
+  void nullTenant() {
+    assertThat(schemaService.getSchema(null), is("foobar321_mod_baz"));
+  }
+
+  @Test
+  void emptyTenant() {
+    assertThat(schemaService.getSchema(""), is("foobar321_mod_baz"));
+  }
+
+  @Nested 
+  @TestPropertySource(properties = {
+     "folio.sql.schema=mod-Boom"
+  })
+  class SchemaServiceWithFolioSchemaTest {
+    @Test
+    void validSchemaByFolio() {
+      assertThat(schemaService.getSchema("FooBar123"), is("foobar123_mod_boom"));
+    }
+  }
+
+  @Nested 
+  @TestPropertySource(properties = {
+     "folio.sql.schema="
+  })
+  class SchemaServiceWithEmptyFolioSchemaTest {
+    @Test
+    void emptySchemaByFolio() {
+      assertThat(schemaService.getSchema("FooBar123"), is("foobar123_mod_baz"));
+    }
   }
 }
