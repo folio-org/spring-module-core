@@ -13,11 +13,11 @@ public class SchemaService {
   // allow list of characters prevents SQL injection
   private static final Pattern SCHEMA_REGEXP = Pattern.compile("[a-z0-9_]+");
 
-  private BuildInfoProperties buildInfoProperties;
+  private final BuildInfoProperties buildInfoProperties;
 
-  private FolioConfig folioConfig;
+  private final FolioConfig folioConfig;
 
-  private TenantProperties tenantProperties;
+  private final TenantProperties tenantProperties;
 
   /**
    * Initialize class.
