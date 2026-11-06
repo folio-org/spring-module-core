@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.folio.spring.tenant.config.FolioConfig;
 import org.folio.spring.tenant.properties.BuildInfoProperties;
+import org.folio.spring.tenant.properties.TenantProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -15,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(classes = SchemaService.class)
-@EnableConfigurationProperties(value = { BuildInfoProperties.class, FolioConfig.class })
+@EnableConfigurationProperties(value = { BuildInfoProperties.class, FolioConfig.class, TenantProperties.class })
 @TestPropertySource(properties = "info.build.artifact=mod-Baz")
 class SchemaServiceTest {
 
