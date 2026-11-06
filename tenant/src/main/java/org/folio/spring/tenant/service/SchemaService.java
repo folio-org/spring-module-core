@@ -29,14 +29,16 @@ public class SchemaService {
 
   public String getSchema(String tenant) {
 
-    final String schema = folioConfig.getSql().getSchema();
+    final String folioBaseSchema = folioConfig.getSql().getSchema();
 
-    final String schemaName = (schema == null || schema.trim().isEmpty())
-      ? String.format("%s_%s", tenant, buildInfoProperties.getArtifact()).replace("-", "_").toLowerCase(Locale.ROOT)
-      : schema;
+    final String baseSchema = (folioBaseSchema == null || folioBaseSchema.trim().isEmpty())
+      ? buildInfoProperties.getArtifact()
+      : folioBaseSchema;
+
+    final String schemaName = String.format("%s_%s", tenant, baseSchema).replace("-", "_").toLowerCase(Locale.ROOT);
 
     if (!SCHEMA_REGEXP.matcher(schemaName).matches()) {
-      throw new IllegalArgumentException("Illegal character in schema name: " + schema);
+      throw new IllegalArgumentException("Illegal character in schema name: " + baseSchema);
     }
 
     return schemaName;
