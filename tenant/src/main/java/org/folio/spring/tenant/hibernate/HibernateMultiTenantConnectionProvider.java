@@ -6,7 +6,6 @@ import java.sql.Statement;
 
 import javax.sql.DataSource;
 
-import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.service.SchemaService;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
@@ -26,9 +25,6 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   private SchemaService schemaService;
 
   @Autowired
-  private TenantProperties tenantProperties;
-
-  @Autowired
   private DataSource dataSource;
 
   @Override
@@ -43,45 +39,21 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   @Override
   public Connection getConnection(String tenant) throws SQLException {
-    String schema = tenant;
     final Connection connection = getAnyConnection();
     try {
-      switch (platform) {
-        case "h2":
-          try (Statement statement = connection.createStatement()) {
-            statement.execute("USE " + schema);
-          }
-          break;
-        case "postgres":
-          connection.setSchema(schema);
-          break;
-        default:
-          throw new HibernateException("Unknown datasource platform [" + platform + "]");
-      }
+      connectionPlatformSelectSchema(tenant, connection);
     } catch (SQLException e) {
-      throw new HibernateException("Could not alter JDBC connection to use schema [" + schema + "] on platform [" + platform + "]", e);
+      throw new HibernateException("Could not alter JDBC connection to use schema for tenant [" + tenant + "] on platform [" + platform + "]", e);
     }
     return connection;
   }
 
   @Override
   public void releaseConnection(String tenant, Connection connection) throws SQLException {
-    String defaultSchema = schemaService.getSchema(tenantProperties.getDefaultTenant());
     try {
-      switch (platform) {
-        case "h2":
-          try (Statement statement = connection.createStatement()) {
-            statement.execute("USE " + defaultSchema);
-          }
-          break;
-        case "postgres":
-          connection.setSchema(defaultSchema);
-          break;
-        default:
-          throw new HibernateException("Unknown datasource platform [" + platform + "]");
-      }
+      connectionPlatformSelectSchema(tenant, connection);
     } catch (SQLException e) {
-      throw new HibernateException("Could not alter JDBC connection to use schema [" + defaultSchema + "] on platform [" + platform + "]", e);
+      throw new HibernateException("Could not alter JDBC connection to use schema for tenant [" + tenant + "] on platform [" + platform + "]", e);
     } finally {
       connection.close();
     }
@@ -101,6 +73,35 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   @Override
   public boolean supportsAggressiveRelease() {
     return true;
+  }
+
+  /**
+   * Select schema on connection using a given tenant.
+   * 
+   * @param tenant Connecting tenant.
+   * @param connection Connection to establish tenant schema connection on.
+   * 
+   * @throws SQLException
+   */
+  @SuppressWarnings("java:S2077") // Suppress "Make sure using dynamically formatted SQL query is safe here" because schema is built and validated using `SchemaService`.
+  private void connectionPlatformSelectSchema(String tenant, Connection connection) throws SQLException {
+    final String schema = schemaService.getSchema(tenant);
+
+    switch (platform) {
+      case "h2":
+        try (Statement statement = connection.createStatement()) {
+          statement.execute("USE " + schema);
+        }
+        break;
+      case "postgres":
+        connection.setSchema(schema);
+        try (Statement statement = connection.createStatement()) {
+          statement.execute("SET search_path TO " + schema + ", public");
+        }
+        break;
+      default:
+        throw new HibernateException("Unknown datasource platform [" + platform + "]");
+    }
   }
 
 }
