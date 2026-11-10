@@ -75,6 +75,15 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
     return true;
   }
 
+  /**
+   * Select schema on connection using a given tenant.
+   * 
+   * @param tenant Connecting tenant.
+   * @param connection Connection to establish tenant schema connection on.
+   * 
+   * @throws SQLException
+   */
+  @SuppressWarnings("java:S2077") // Suppress "Make sure using dynamically formatted SQL query is safe here" because schema is built and validated using `SchemaService`.
   private void connectionPlatformSelectSchema(String tenant, Connection connection) throws SQLException {
     final String schema = schemaService.getSchema(tenant);
 
