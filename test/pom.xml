@@ -49,7 +49,7 @@
       <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <!-- Remove this version override once Spring Boot includes this version or greater. -->
-      <version>3.1.8</version>
+      <version>3.2.4</version>
     </dependency>
   </dependencies>
 
