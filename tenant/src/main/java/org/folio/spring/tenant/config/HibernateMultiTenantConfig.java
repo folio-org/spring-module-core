@@ -2,10 +2,12 @@ package org.folio.spring.tenant.config;
 
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_CONNECTION_PROVIDER;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER;
+import static org.hibernate.cfg.MappingSettings.DEFAULT_SCHEMA;
 
 import java.util.HashMap;
 import java.util.Map;
 import javax.sql.DataSource;
+
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.boot.jpa.autoconfigure.JpaProperties;
@@ -39,6 +41,7 @@ public class HibernateMultiTenantConfig {
     properties.putAll(jpaProperties.getProperties());
     properties.put(MULTI_TENANT_CONNECTION_PROVIDER, multiTenantConnectionProvider);
     properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, currentTenantIdentifierResolver);
+    properties.remove(DEFAULT_SCHEMA);
     LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
     em.setDataSource(dataSource);
     em.setPackagesToScan("org.folio.rest");
