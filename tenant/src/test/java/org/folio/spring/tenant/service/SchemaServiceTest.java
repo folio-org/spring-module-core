@@ -4,7 +4,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.folio.spring.tenant.config.FolioConfig;
+import org.folio.spring.tenant.config.JpaPropertiesHibernateConfig;
 import org.folio.spring.tenant.properties.BuildInfoProperties;
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.junit.jupiter.api.Nested;
@@ -16,11 +16,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(classes = SchemaService.class)
-@EnableConfigurationProperties(value = { BuildInfoProperties.class, FolioConfig.class, TenantProperties.class })
+@SpringBootTest(classes = { SchemaService.class })
+@EnableConfigurationProperties(value = { BuildInfoProperties.class, JpaPropertiesHibernateConfig.class, TenantProperties.class })
 @TestPropertySource(properties = {
-     "info.build.artifact=mod-Baz",
-     "tenant.default-tenant=FooBar321"
+   "info.build.artifact=mod-Baz",
+   "tenant.default-tenant=FooBar321"
  })
 class SchemaServiceTest {
 
@@ -50,7 +50,7 @@ class SchemaServiceTest {
 
   @Nested 
   @TestPropertySource(properties = {
-     "folio.sql.schema=mod-Boom"
+    "spring.jpa.properties.hibernate.default_schema=mod-Boom"
   })
   class SchemaServiceWithFolioSchemaTest {
     @Test
@@ -61,7 +61,7 @@ class SchemaServiceTest {
 
   @Nested 
   @TestPropertySource(properties = {
-     "folio.sql.schema="
+    "spring.jpa.properties.hibernate.default_schema="
   })
   class SchemaServiceWithEmptyFolioSchemaTest {
     @Test
