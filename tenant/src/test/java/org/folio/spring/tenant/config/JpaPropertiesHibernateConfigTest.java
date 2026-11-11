@@ -11,35 +11,35 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FolioSqlConfigTest {
+class JpaPropertiesHibernateConfigTest {
 
-  private static final String SCHEMA = "schema";
+  private static final String DEFAULT_SCHEMA = "defaultSchema";
 
   @InjectMocks
-  private FolioConfig folioConfig;
+  private JpaPropertiesHibernateConfig jpaConfig;
 
   /**
-   * Test the schema getter.
+   * Test the defaultSchema getter.
    */
   @Test
   void getSchemaWorksTest() {
 
-    setField(folioConfig.getSql(), SCHEMA, VALUE);
+    setField(jpaConfig, DEFAULT_SCHEMA, VALUE);
 
-    assertEquals(VALUE, folioConfig.getSql().getSchema());
+    assertEquals(VALUE, jpaConfig.getDefaultSchema());
   }
 
   /**
-   * Test the schema setter.
+   * Test the defaultSchema setter.
    */
   @Test
   void setSchemaWorksTest() {
 
-    setField(folioConfig.getSql(), SCHEMA, null);
+    setField(jpaConfig, DEFAULT_SCHEMA, null);
 
-    folioConfig.getSql().setSchema(VALUE);
+    jpaConfig.setDefaultSchema(VALUE);
 
-    assertEquals(VALUE, getField(folioConfig.getSql(), SCHEMA));
+    assertEquals(VALUE, getField(jpaConfig, DEFAULT_SCHEMA));
   }
 
 }
