@@ -3,9 +3,7 @@ package org.folio.spring.tenant.hibernate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import javax.sql.DataSource;
-
 import org.folio.spring.tenant.service.SchemaService;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
@@ -33,13 +31,14 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   @Override
   public Connection getAnyConnection() throws SQLException {
-    logger.info("MultiTenantConnectionProvider Requesting **ANY** connection.");
+    logger.info("Requesting **ANY** connection.");
     return dataSource.getConnection();
   }
 
   @Override
   public void releaseAnyConnection(Connection connection) throws SQLException {
-    logger.info("MultiTenantConnectionProvider releasing connection for **ANY**.");
+    logger.debug("Releasing connection for **ANY**.");
+
     connection.close();
   }
 
@@ -51,13 +50,16 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
     } catch (SQLException e) {
       throw new HibernateException("Could not alter JDBC connection to use schema for tenant [" + tenant + "] on platform [" + platform + "]", e);
     }
-    logger.info("MultiTenantConnectionProvider Requesting connection for tenant: {}. Connection schema resolves as \"{}\"", tenant, connection.getSchema());
+
+    logger.debug("Requesting connection for tenant: {}. Connection schema resolves as \"{}\"", tenant, connection.getSchema());
+
     return connection;
   }
 
   @Override
   public void releaseConnection(String tenant, Connection connection) throws SQLException {
-    logger.info("MultiTenantConnectionProvider releasing connection for tenant: {}.", tenant);
+    logger.debug("Releasing connection for tenant: {}.", tenant);
+
     try {
       connectionPlatformSelectSchema(tenant, connection);
     } catch (SQLException e) {

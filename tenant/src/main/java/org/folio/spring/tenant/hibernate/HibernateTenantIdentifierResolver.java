@@ -1,10 +1,7 @@
 package org.folio.spring.tenant.hibernate;
 
-import java.util.Optional;
-
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.folio.spring.tenant.exception.NoTenantHeaderException;
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
@@ -30,22 +27,26 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
 
   @Override
   public String resolveCurrentTenantIdentifier() {
-    Optional<HttpServletRequest> request = getRequestFromContext();
-    if (request.isPresent()) {
-      String tenant = request.get().getHeader(tenantProperties.getHeaderName());
+    final HttpServletRequest request = getRequestFromContext();
+
+    if (request == null) {
+      final String tenant = ThreadLocalStorage.getTenant();
+
       if (tenant != null) {
         return tenant;
       }
+    } else {
+      final String tenant = request.getHeader(tenantProperties.getHeaderName());
+
+      if (tenant != null) {
+        return tenant;
+      }
+
       if (tenantProperties.isForceTenant()) {
         throw new NoTenantHeaderException("No tenant header on request!");
       }
-    } else {
-      String tenant = ThreadLocalStorage.getTenant();
-      if (tenant != null) {
-        return tenant;
-      }
-      // NOTE: not enforcing tenant here
     }
+
     return tenantProperties.getDefaultTenant();
   }
 
@@ -54,12 +55,12 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
     return true;
   }
 
-  private Optional<HttpServletRequest> getRequestFromContext() {
+  private HttpServletRequest getRequestFromContext() {
     RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
-      return Optional.ofNullable(((ServletRequestAttributes) requestAttributes).getRequest());
+      return ((ServletRequestAttributes) requestAttributes).getRequest();
     }
-    return Optional.empty();
+    return null;
   }
 
 }
