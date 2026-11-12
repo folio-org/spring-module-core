@@ -50,7 +50,7 @@ public class HibernateTenantIdentifierResolverTest {
   private HttpServletRequest httpServletRequest;
 
   @BeforeEach
-  void setup() {
+  void beforeEach() {
     threadLocalStorage = mockStatic(ThreadLocalStorage.class, withSettings().strictness(LENIENT));
     requestContextHolder = mockStatic(RequestContextHolder.class, withSettings().strictness(LENIENT));
 
@@ -59,7 +59,7 @@ public class HibernateTenantIdentifierResolverTest {
   }
 
   @AfterEach
-  void cleanup() {
+  void afterEach() {
     threadLocalStorage.close();
     requestContextHolder.close();
   }

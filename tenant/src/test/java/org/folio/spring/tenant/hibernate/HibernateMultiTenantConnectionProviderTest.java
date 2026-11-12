@@ -59,7 +59,7 @@ public class HibernateMultiTenantConnectionProviderTest {
   private Statement statement;
 
   @BeforeEach
-  void setup() throws SQLException {
+  void beforeEach() throws SQLException {
     lenient().when(schemaService.getSchema(eq(TENANT))).thenReturn(SCHEMA);
     lenient().when(dataSource.getConnection()).thenReturn(connection);
     lenient().when(connection.createStatement()).thenReturn(statement);

@@ -100,7 +100,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   @SuppressWarnings("java:S2077") // Suppress "Make sure using dynamically formatted SQL query is safe here" because schema is built and validated using `SchemaService`.
   private void connectionPlatformSelectSchema(String tenant, Connection connection) throws SQLException {
     final String schema = schemaService.getSchema(tenant);
-    logger.info("MultiTenantConnectionProvider switching to tenant \"{}\", schema \"{}\" for platform \"{}\".", tenant, schema, platform);
+    logger.info("Switching to tenant \"{}\", schema \"{}\" for platform \"{}\".", tenant, schema, platform);
 
     switch (platform) {
       case "h2":
