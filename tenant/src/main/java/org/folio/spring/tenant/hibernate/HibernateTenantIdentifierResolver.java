@@ -1,16 +1,11 @@
 package org.folio.spring.tenant.hibernate;
 
-import java.util.Optional;
-
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.folio.spring.tenant.exception.NoTenantHeaderException;
 import org.folio.spring.tenant.properties.TenantProperties;
-import org.folio.spring.tenant.service.SchemaService;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
@@ -21,11 +16,11 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @DependsOn("hibernateSchemaService")
 public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
 
-  @Autowired
-  private SchemaService schemaService;
+  private final TenantProperties tenantProperties;
 
-  @Autowired
-  private TenantProperties tenantProperties;
+  public HibernateTenantIdentifierResolver(TenantProperties tenantProperties) {
+    this.tenantProperties = tenantProperties;
+  }
 
   @PreDestroy
   public void unload() {
@@ -34,23 +29,27 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
 
   @Override
   public String resolveCurrentTenantIdentifier() {
-    Optional<HttpServletRequest> request = getRequestFromContext();
-    if (request.isPresent()) {
-      String tenant = request.get().getHeader(tenantProperties.getHeaderName());
+    final HttpServletRequest request = getRequestFromContext();
+
+    if (request == null) {
+      final String tenant = ThreadLocalStorage.getTenant();
+
       if (tenant != null) {
-        return schemaService.getSchema(tenant);
+        return tenant;
       }
+    } else {
+      final String tenant = request.getHeader(tenantProperties.getHeaderName());
+
+      if (tenant != null) {
+        return tenant;
+      }
+
       if (tenantProperties.isForceTenant()) {
         throw new NoTenantHeaderException("No tenant header on request!");
       }
-    } else {
-      String tenant = ThreadLocalStorage.getTenant();
-      if (tenant != null) {
-        return schemaService.getSchema(tenant);
-      }
-      // NOTE: not enforcing tenant here
     }
-    return schemaService.getSchema(tenantProperties.getDefaultTenant());
+
+    return tenantProperties.getDefaultTenant();
   }
 
   @Override
@@ -58,12 +57,12 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
     return true;
   }
 
-  private Optional<HttpServletRequest> getRequestFromContext() {
+  private HttpServletRequest getRequestFromContext() {
     RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
-      return Optional.ofNullable(((ServletRequestAttributes) requestAttributes).getRequest());
+      return ((ServletRequestAttributes) requestAttributes).getRequest();
     }
-    return Optional.empty();
+    return null;
   }
 
 }
