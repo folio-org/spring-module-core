@@ -10,8 +10,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class SchemaService {
 
-  // Allow list of characters prevents SQL injection.
-  private static final Pattern SCHEMA_REGEXP = Pattern.compile("[a-z0-9_]+");
+  /**
+   * Regular expression for restricting characters to ASCII word characters only.
+   */
+  public static final Pattern SCHEMA_REGEXP = Pattern.compile("\\w+");
 
   private final BuildInfoProperties buildInfoProperties;
 

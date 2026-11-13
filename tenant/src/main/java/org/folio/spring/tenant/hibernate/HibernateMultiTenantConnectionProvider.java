@@ -35,7 +35,8 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   @Override
   public Connection getAnyConnection() throws SQLException {
-    logger.info("Requesting **ANY** connection.");
+    logger.debug("Requesting **ANY** connection.");
+
     return dataSource.getConnection();
   }
 
