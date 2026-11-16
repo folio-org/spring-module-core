@@ -7,6 +7,9 @@ import org.folio.spring.tenant.properties.BuildInfoProperties;
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service for managing schemas.
+ */
 @Service
 public class SchemaService {
 
@@ -31,6 +34,19 @@ public class SchemaService {
     this.buildInfoProperties = buildInfoProperties;
     this.jpaPropertiesHibernateConfig = jpaPropertiesHibernateConfig;
     this.tenantProperties = tenantProperties;
+  }
+
+  /**
+   * Ensure that the given schema name is safe and valid.
+   *
+   * @param name The schema name to verify.
+   *
+   * @throws IllegalArgumentException On invalid schema name.
+   */
+  public void ensureSchema(String name) {
+    if (!SCHEMA_REGEXP.matcher(name).matches()) {
+      throw new IllegalArgumentException("Illegal character in schema name: " + name);
+    }
   }
 
   /**
@@ -61,9 +77,7 @@ public class SchemaService {
 
     final String schemaName = String.format("%s_%s", tenant, baseSchema).replace("-", "_").toLowerCase(Locale.ROOT);
 
-    if (!SCHEMA_REGEXP.matcher(schemaName).matches()) {
-      throw new IllegalArgumentException("Illegal character in schema name: " + schemaName);
-    }
+    ensureSchema(schemaName);
 
     return schemaName;
   }

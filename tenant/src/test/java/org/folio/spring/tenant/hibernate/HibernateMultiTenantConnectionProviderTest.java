@@ -131,7 +131,7 @@ public class HibernateMultiTenantConnectionProviderTest {
 
   @Test
   void testSupportsAggressiveReleaseReturnsTrue() {
-    assertEquals(Boolean.TRUE, hibernateMultiTenantConnectionProvider.supportsAggressiveRelease());
+    assertEquals(Boolean.FALSE, hibernateMultiTenantConnectionProvider.supportsAggressiveRelease());
   }
 
   @Test

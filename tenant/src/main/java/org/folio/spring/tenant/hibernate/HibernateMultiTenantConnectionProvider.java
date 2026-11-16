@@ -3,9 +3,7 @@ package org.folio.spring.tenant.hibernate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import javax.sql.DataSource;
-
 import org.folio.spring.tenant.service.SchemaService;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
@@ -29,6 +27,8 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   private final transient SchemaService schemaService;
 
   public HibernateMultiTenantConnectionProvider(DataSource dataSource, SchemaService schemaService) {
+    super();
+
     this.dataSource = dataSource;
     this.schemaService = schemaService;
   }
@@ -38,13 +38,6 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
     logger.debug("Requesting **ANY** connection.");
 
     return dataSource.getConnection();
-  }
-
-  @Override
-  public void releaseAnyConnection(Connection connection) throws SQLException {
-    logger.debug("Releasing connection for **ANY**.");
-
-    connection.close();
   }
 
   @Override
@@ -62,6 +55,19 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
+  public boolean isUnwrappableAs(Class unwrapType) {
+    return false;
+  }
+
+  @Override
+  public void releaseAnyConnection(Connection connection) throws SQLException {
+    logger.debug("Releasing connection for **ANY**.");
+
+    connection.close();
+  }
+
+  @Override
   public void releaseConnection(String tenant, Connection connection) throws SQLException {
     logger.debug("Releasing connection for tenant: {}.", tenant);
 
@@ -75,19 +81,13 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public boolean isUnwrappableAs(Class unwrapType) {
-    return false;
-  }
-
-  @Override
   public <T> T unwrap(Class<T> unwrapType) {
     return null;
   }
 
   @Override
   public boolean supportsAggressiveRelease() {
-    return true;
+    return false;
   }
 
   /**
@@ -98,7 +98,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
    * 
    * @throws SQLException
    */
-  @SuppressWarnings("java:S2077") // Suppress "Make sure using dynamically formatted SQL query is safe here" because schema is built and validated using `SchemaService`.
+  @SuppressWarnings("java:S2077") // SonarQube false positive, the query is protected by getSchema() in SchemaService and cannot produce SQL escapes.
   private void connectionPlatformSelectSchema(String tenant, Connection connection) throws SQLException {
     final String schema = schemaService.getSchema(tenant);
     logger.info("Switching to tenant \"{}\", schema \"{}\" for platform \"{}\".", tenant, schema, platform);

@@ -12,16 +12,27 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+/**
+ * Construct or return the tenant as needed while resolving the tenant identifier for Hibernate.
+ */
 @Component
 @DependsOn("hibernateSchemaService")
 public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
 
   private final TenantProperties tenantProperties;
 
+  /**
+   * Initializer.
+   *
+   * @param tenantProperties The tenant properties.
+   */
   public HibernateTenantIdentifierResolver(TenantProperties tenantProperties) {
     this.tenantProperties = tenantProperties;
   }
 
+  /**
+   * Perform clean up before deleting.
+   */
   @PreDestroy
   public void unload() {
     ThreadLocalStorage.unload();
@@ -31,22 +42,18 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
   public String resolveCurrentTenantIdentifier() {
     final HttpServletRequest request = getRequestFromContext();
 
-    if (request == null) {
-      final String tenant = ThreadLocalStorage.getTenant();
+    final String tenant = request == null
+      ? ThreadLocalStorage.getTenant()
+      : request.getHeader(tenantProperties.getHeaderName());
 
-      if (tenant != null) {
-        return tenant;
-      }
-    } else {
-      final String tenant = request.getHeader(tenantProperties.getHeaderName());
+    if (tenant != null) {
+      return tenant;
+    }
 
-      if (tenant != null) {
-        return tenant;
-      }
-
-      if (tenantProperties.isForceTenant()) {
-        throw new NoTenantHeaderException("No tenant header on request!");
-      }
+    // The "force tenant" setting probably should be renamed to "require tenant".
+    // This actually requires tenant when header is provided and if there is no tenant provided, then throw an error.
+    if (request != null && tenantProperties.isForceTenant()) {
+      throw new NoTenantHeaderException("No tenant header on request!");
     }
 
     return tenantProperties.getDefaultTenant();
@@ -57,12 +64,18 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
     return true;
   }
 
+  /**
+   * Extract HTTP Request from context if it exists.
+   *
+   * @return The HTTP Request or NULL if it does not exist.
+   */
   private HttpServletRequest getRequestFromContext() {
-    RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-    if (requestAttributes != null) {
-      return ((ServletRequestAttributes) requestAttributes).getRequest();
-    }
-    return null;
+
+    final RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+
+    return requestAttributes == null
+      ? null
+      : ((ServletRequestAttributes) requestAttributes).getRequest();
   }
 
 }

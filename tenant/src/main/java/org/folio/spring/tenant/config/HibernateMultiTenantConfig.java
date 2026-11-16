@@ -61,8 +61,8 @@ public class HibernateMultiTenantConfig {
   @Bean
   HibernatePropertiesCustomizer multiTenantCustomizer(
     CurrentTenantIdentifierResolver<?> resolver,
-    MultiTenantConnectionProvider<?> connectionProvider)
-  {
+    MultiTenantConnectionProvider<?> connectionProvider
+  ) {
 
     return hibernateProperties -> {
       hibernateProperties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, resolver);
