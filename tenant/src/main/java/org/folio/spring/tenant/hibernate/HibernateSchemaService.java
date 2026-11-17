@@ -40,22 +40,82 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Service;
 
+/**
+ * Hibernate schema service.
+ */
 @Service("hibernateSchemaService")
 public class HibernateSchemaService implements InitializingBean {
 
+  /**
+   * Connection driver class.
+   */
   protected static final String CONNECTION_DRIVER_CLASS = "connection.driver_class";
+
+  /**
+   * Dialect.
+   */
   protected static final String DIALECT = "dialect";
+
+  /**
+   * Database platform.
+   */
   protected static final String DATABASE_PLATFORM = "database-platform";
+
+  /**
+   * Hibernate default schema.
+   */
   protected static final String HIBERNATE_DEFAULT_SCHEMA = "hibernate.default_schema";
+
+  /**
+   * Hibernate ddl-auto.
+   */
   protected static final String HIBERNATE_DDLAUTO = "hibernate.ddl-auto";
+
+  /**
+   * Hibernation connection URL.
+   */
   protected static final String HIBERNATE_CONNECTION_URL = "hibernate.connection.url";
+
+  /**
+   * Hibernate connection driver class.
+   */
   protected static final String HIBERNATE_CONNECTION_DRIVER_CLASS = "hibernate.connection.driver_class";
+
+  /**
+   * Hibernate connection user name.
+   */
   protected static final String HIBERNATE_CONNECTION_USERNAME = "hibernate.connection.username";
+
+  /**
+   * Hibernate connection pass.
+   */
   protected static final String HIBERNATE_CONNECTION_PASSWORD = "hibernate.connection.password";
+
+  /**
+   * Hibernate hbm2ddl auto.
+   */
   protected static final String HIBERNATE_HBM2DDL_AUTO = "hibernate.hbm2ddl.auto";
+
+  /**
+   * Hibernate JDBC LONBB non-contextual creation.
+   */
   protected static final String HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION = "hibernate.jdbc.lob.non_contextual_creation";
+
+  /**
+   * Hibernate open in view.
+   */
   protected static final String HIBERNATE_OPENINVIEW = "hibernate.open-in-view";
+
+  /**
+   * Hibernate show SQL.
+   */
   protected static final String HIBERNATE_SHOWSQL = "hibernate.show-sql";
+
+  /**
+   * Hibernate query schema existence SQL query.
+   *
+   * This accepts a single argument for the query name.
+   */
   protected static final String QUERY_SCHEMA_EXISTS = "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ?)";
 
   private final List<String> domainPackages = new ArrayList<String>();
@@ -88,7 +148,7 @@ public class HibernateSchemaService implements InitializingBean {
    * @param sqlTemplateService             The SQL template service.
    * @param tenantProperties               The tenant properties.
    */
-  HibernateSchemaService(
+  public HibernateSchemaService(
     DataSourceProperties dataSourceProperties, HibernateProperties hibernateProperties,
     List<HibernateTenantInit> hibernateTenantInitializations, JpaProperties jpaProperties, ResourceLoader resourceLoader,
     SchemaService schemaService, SqlTemplateService sqlTemplateService, TenantProperties tenantProperties
@@ -360,7 +420,7 @@ public class HibernateSchemaService implements InitializingBean {
   protected String getSchema(Map<String, String> settings) {
     final String name = settings.get(HIBERNATE_DEFAULT_SCHEMA);
 
-    schemaService.ensureSchema(name);
+    schemaService.validateSchemaName(name);
 
     return name;
   }

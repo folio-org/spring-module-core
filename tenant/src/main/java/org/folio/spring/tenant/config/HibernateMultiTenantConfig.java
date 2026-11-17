@@ -7,6 +7,8 @@ import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RES
 import java.util.HashMap;
 import java.util.Map;
 import javax.sql.DataSource;
+import org.folio.spring.tenant.properties.BuildInfoProperties;
+import org.folio.spring.tenant.properties.TenantProperties;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
@@ -24,12 +26,34 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 @Configuration
 public class HibernateMultiTenantConfig {
 
-  /*@Bean
-  @Primary
-  DataSource dataSource(DataSourceProperties props, SchemaService schemaService) {
+  /**
+   * Initializer.
+   */
+  HibernateMultiTenantConfig() {
+    // Do nothing.
+  }
 
-    return new HibernateRoutingDataSource(props.initializeDataSourceBuilder().build(), schemaService);
-  }*/
+  @Bean
+  BuildInfoProperties buildInfoProperties() {
+    return new BuildInfoProperties();
+  }
+
+  @Bean
+  HibernatePropertiesCustomizer multiTenantCustomizer(
+    CurrentTenantIdentifierResolver<?> resolver,
+    MultiTenantConnectionProvider<?> connectionProvider
+  ) {
+
+    return hibernateProperties -> {
+      hibernateProperties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, resolver);
+      hibernateProperties.put(MULTI_TENANT_CONNECTION_PROVIDER, connectionProvider);
+    };
+  }
+
+  @Bean
+  JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig() {
+    return new JpaPropertiesHibernateConfig();
+  }
 
   @Bean
   JpaVendorAdapter jpaVendorAdapter() {
@@ -66,15 +90,13 @@ public class HibernateMultiTenantConfig {
   }
 
   @Bean
-  HibernatePropertiesCustomizer multiTenantCustomizer(
-    CurrentTenantIdentifierResolver<?> resolver,
-    MultiTenantConnectionProvider<?> connectionProvider
-  ) {
+  SpringDataSourceConfig springDataSourceConfig() {
+    return new SpringDataSourceConfig();
+  }
 
-    return hibernateProperties -> {
-      hibernateProperties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, resolver);
-      hibernateProperties.put(MULTI_TENANT_CONNECTION_PROVIDER, connectionProvider);
-    };
+  @Bean
+  TenantProperties tenantProperties() {
+    return new TenantProperties();
   }
 
 }

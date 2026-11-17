@@ -1,7 +1,6 @@
 package org.folio.spring.tenant.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Provide a helper for getting standard JPA configurations that have no proper getting in JpaProperties.
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Component;
  *
  * @see org.springframework.boot.jpa.autoconfigure.JpaProperties
  */
-@Component
 @ConfigurationProperties(prefix = "spring.jpa.properties.hibernate")
 public class JpaPropertiesHibernateConfig {
 

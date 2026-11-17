@@ -1,16 +1,14 @@
 package org.folio.spring.tenant.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Helper configuration for accessing 'spring.datasource' derived values.
  *
  * These values are provided by Spring but these values aren't available in this form, thus this class.
  */
-@Component
 @ConfigurationProperties(prefix = "spring.datasource")
-public class SpringDatasourceConfig {
+public class SpringDataSourceConfig {
 
   private String driverClassName;
 
@@ -19,6 +17,13 @@ public class SpringDatasourceConfig {
   private String url;
 
   private String username;
+
+  /**
+   * Initializer.
+   */
+  public SpringDataSourceConfig() {
+    // Do nothing.
+  }
 
   /**
    * Get driver class name.

@@ -3,11 +3,8 @@ package org.folio.spring.tenant.properties;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
 @ConfigurationProperties(prefix = "tenant")
 public class TenantProperties implements Serializable {
 

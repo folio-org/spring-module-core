@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import javax.sql.DataSource;
 import org.folio.spring.tenant.service.SchemaService;
+import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.slf4j.Logger;
@@ -12,10 +13,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * A Hibernate connection provider with multi-tenant support.
+ */
 @Component
 public class HibernateMultiTenantConnectionProvider implements MultiTenantConnectionProvider<String> {
 
-  private static final Logger logger = LoggerFactory.getLogger(HibernateMultiTenantConnectionProvider.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HibernateMultiTenantConnectionProvider.class);
 
   private static final long serialVersionUID = 5748544845255283079L;
 
@@ -26,6 +30,12 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   private final transient SchemaService schemaService;
 
+  /**
+   * Initializer.
+   *
+   * @param dataSource    The data source.
+   * @param schemaService The schema service.
+   */
   public HibernateMultiTenantConnectionProvider(DataSource dataSource, SchemaService schemaService) {
     super();
 
@@ -35,21 +45,27 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   @Override
   public Connection getAnyConnection() throws SQLException {
-    logger.debug("Requesting **ANY** connection.");
 
-    return dataSource.getConnection();
+    final String tenant = ThreadLocalStorage.getTenant();
+
+    final Connection connection = dataSource.getConnection();
+
+    LOG.debug("Requesting **ANY** connection, with thread local storage tenant of '{}' and schema '{}'.", tenant, connection.getSchema());
+
+    if (tenant != null && !tenant.isBlank()) {
+      alterSchema(tenant, connection);
+    }
+
+    return connection;
   }
 
   @Override
   public Connection getConnection(String tenant) throws SQLException {
     final Connection connection = getAnyConnection();
-    try {
-      connectionPlatformSelectSchema(tenant, connection);
-    } catch (SQLException e) {
-      throw new HibernateException("Could not alter JDBC connection to use schema for tenant [" + tenant + "] on platform [" + platform + "]", e);
-    }
 
-    logger.debug("Requesting connection for tenant: {}. Connection schema resolves as \"{}\"", tenant, connection.getSchema());
+    LOG.debug("Requesting connection for tenant '{}' with schema '{}'.", tenant, connection.getSchema());
+
+    alterSchema(tenant, connection);
 
     return connection;
   }
@@ -62,22 +78,20 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   @Override
   public void releaseAnyConnection(Connection connection) throws SQLException {
-    logger.debug("Releasing connection for **ANY**.");
+
+    final String tenant = ThreadLocalStorage.getTenant();
+
+    LOG.debug("Releasing connection for **ANY**, with thread local storage tenant of '{}' and schema '{}'.", tenant, connection.getSchema());
 
     connection.close();
   }
 
   @Override
   public void releaseConnection(String tenant, Connection connection) throws SQLException {
-    logger.debug("Releasing connection for tenant: {}.", tenant);
 
-    try {
-      connectionPlatformSelectSchema(tenant, connection);
-    } catch (SQLException e) {
-      throw new HibernateException("Could not alter JDBC connection to use schema for tenant [" + tenant + "] on platform [" + platform + "]", e);
-    } finally {
-      connection.close();
-    }
+    LOG.debug("Releasing connection for tenant '{}' with schema '{}'.", tenant, connection.getSchema());
+
+    alterSchema(tenant, connection);
   }
 
   @Override
@@ -91,32 +105,53 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   }
 
   /**
-   * Select schema on connection using a given tenant.
-   * 
-   * @param tenant Connecting tenant.
+   * Alter the schema for the given tenant, selecting schema and performing provisioning as needed.
+   *
+   * @param tenant     Connecting tenant.
    * @param connection Connection to establish tenant schema connection on.
-   * 
-   * @throws SQLException
+   *
+   * @throws SQLException On SQL error.
    */
   @SuppressWarnings("java:S2077") // SonarQube false positive, the query is protected by getSchema() in SchemaService and cannot produce SQL escapes.
-  private void connectionPlatformSelectSchema(String tenant, Connection connection) throws SQLException {
-    final String schema = schemaService.getSchema(tenant);
-    logger.info("Switching to tenant \"{}\", schema \"{}\" for platform \"{}\".", tenant, schema, platform);
+  private void alterSchema(String tenant, Connection connection) {
 
-    switch (platform) {
-      case "h2":
-        try (Statement statement = connection.createStatement()) {
-          statement.execute("USE " + schema);
-        }
-        break;
-      case "postgres":
-        connection.setSchema(schema);
-        try (Statement statement = connection.createStatement()) {
-          statement.execute("SET search_path TO " + schema + ", public");
-        }
-        break;
-      default:
-        throw new HibernateException("Unknown datasource platform [" + platform + "]");
+    final String schema = schemaService.getSchema(tenant);
+
+    try {
+      // Do nothing when schema NULL or blank.
+      if (schema == null || schema.isBlank()) {
+        return;
+      }
+
+      schemaService.ensureProvisionedSchema(schema, tenant, connection); 
+
+      // Do not change schema if already set.
+      if (schema.equalsIgnoreCase(connection.getSchema())) {
+        return;
+      }
+
+      // Drivers that do not support this are ignored, making it safe to do this here.
+      connection.setSchema(schema);
+
+      switch (platform) {
+        case "h2":
+          try (Statement statement = connection.createStatement()) {
+            statement.execute(String.format("USE %s", schema));
+          }
+          break;
+        case "postgres":
+          try (Statement statement = connection.createStatement()) {
+            statement.execute(String.format("SET search_path TO %s, public", schema));
+          }
+  
+          break;
+        default:
+          throw new HibernateException(String.format("Unknown datasource platform '%s' for schema '%s' and tenant '%s'.", platform, schema, tenant));
+      }
+
+      LOG.debug("Updated connection for tenant '{}', schema is now '{}' for platform '{}'.", tenant, connection.getSchema(), platform);
+    } catch (SQLException e) {
+      throw new HibernateException(String.format("Could not alter JDBC connection to use schema '%s' for tenant '%s' on platform '%s'", schema, tenant, platform), e);
     }
   }
 

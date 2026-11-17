@@ -18,7 +18,7 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
  */
 public class HibernateRoutingDataSource extends AbstractRoutingDataSource {
 
-  private static final Logger logger = LoggerFactory.getLogger(HibernateRoutingDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HibernateRoutingDataSource.class);
 
   private final DataSource dataSource;
 
@@ -27,7 +27,8 @@ public class HibernateRoutingDataSource extends AbstractRoutingDataSource {
   /**
    * Initializer.
    *
-   * @param dataSource The default data source.
+   * @param dataSource    The default data source.
+   * @param schemaService The schema service.
    */
   public HibernateRoutingDataSource(DataSource dataSource, SchemaService schemaService) {
 
@@ -56,7 +57,7 @@ public class HibernateRoutingDataSource extends AbstractRoutingDataSource {
     if (tenant != null) {
       final String schema = schemaService.getSchema(tenant);
 
-      logger.debug("Using schema '{}' with tenant of '{}'.", schema, tenant);
+      LOG.debug("Using schema '{}' with tenant of '{}'.", schema, tenant);
 
       connection.setSchema(schema);
       try (Statement statement = connection.createStatement()) {

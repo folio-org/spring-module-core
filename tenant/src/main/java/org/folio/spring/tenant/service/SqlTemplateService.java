@@ -1,13 +1,14 @@
 package org.folio.spring.tenant.service;
 
 import java.util.Locale;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+/**
+ * Provide SQL template service.
+ */
 @Service
 public class SqlTemplateService {
 
@@ -19,8 +20,17 @@ public class SqlTemplateService {
   @Value("${spring.sql.init.platform:postgres}")
   private String platform;
 
-  @Autowired
-  private SpringTemplateEngine templateEngine;
+  private final SpringTemplateEngine templateEngine;
+
+  /**
+   * Initializer.
+   *
+   * @param templateEngine The template engine.
+   */
+  public SqlTemplateService(SpringTemplateEngine templateEngine) {
+
+    this.templateEngine = templateEngine;
+  }
 
   public String templateImportSql(String schema) {
     return templateEngine.process(SCHEMA_IMPORT_INITIAL + DOT + platform, createContext(SCHEMA, schema));

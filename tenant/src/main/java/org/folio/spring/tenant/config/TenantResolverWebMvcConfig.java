@@ -1,10 +1,8 @@
 package org.folio.spring.tenant.config;
 
 import java.util.List;
-
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.resolver.TenantHeaderResolver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -15,8 +13,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class TenantResolverWebMvcConfig implements WebMvcConfigurer {
 
-  @Autowired
-  private TenantProperties tenantProperties;
+  private final TenantProperties tenantProperties;
+
+  /**
+   * Initializer.
+   *
+   * @param tenantProperties The tenant properties.
+   */
+  public TenantResolverWebMvcConfig(TenantProperties tenantProperties) {
+
+    this.tenantProperties = tenantProperties;
+  }
 
   @Override
   public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
