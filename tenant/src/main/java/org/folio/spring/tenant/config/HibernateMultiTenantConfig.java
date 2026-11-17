@@ -1,8 +1,8 @@
 package org.folio.spring.tenant.config;
 
+import static org.hibernate.cfg.MappingSettings.DEFAULT_SCHEMA;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_CONNECTION_PROVIDER;
 import static org.hibernate.cfg.MultiTenancySettings.MULTI_TENANT_IDENTIFIER_RESOLVER;
-import static org.hibernate.cfg.MappingSettings.DEFAULT_SCHEMA;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +23,13 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
  */
 @Configuration
 public class HibernateMultiTenantConfig {
+
+  /*@Bean
+  @Primary
+  DataSource dataSource(DataSourceProperties props, SchemaService schemaService) {
+
+    return new HibernateRoutingDataSource(props.initializeDataSourceBuilder().build(), schemaService);
+  }*/
 
   @Bean
   JpaVendorAdapter jpaVendorAdapter() {
