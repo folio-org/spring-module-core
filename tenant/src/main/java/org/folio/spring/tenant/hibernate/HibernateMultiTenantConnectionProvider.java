@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import javax.sql.DataSource;
+import org.folio.spring.tenant.service.SchemaProvisionerService;
 import org.folio.spring.tenant.service.SchemaService;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.hibernate.HibernateException;
@@ -30,17 +31,24 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   private final transient SchemaService schemaService;
 
+  private final transient SchemaProvisionerService schemaProvisionerService;
+
   /**
    * Initializer.
    *
-   * @param dataSource    The data source.
-   * @param schemaService The schema service.
+   * @param dataSource               The data source.
+   * @param schemaService            The schema service.
+   * @param schemaProvisionerService The schema provisioner service.
    */
-  public HibernateMultiTenantConnectionProvider(DataSource dataSource, SchemaService schemaService) {
+  public HibernateMultiTenantConnectionProvider(
+    DataSource dataSource, SchemaService schemaService, SchemaProvisionerService schemaProvisionerService
+  ) {
+
     super();
 
     this.dataSource = dataSource;
     this.schemaService = schemaService;
+    this.schemaProvisionerService = schemaProvisionerService;
   }
 
   @Override
@@ -101,7 +109,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   @Override
   public boolean supportsAggressiveRelease() {
-    return false;
+    return true;
   }
 
   /**
@@ -123,7 +131,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
         return;
       }
 
-      schemaService.ensureProvisionedSchema(schema, tenant, connection); 
+      schemaProvisionerService.ensureProvisionedSchema(schema, tenant, connection); 
 
       // Do not change schema if already set.
       if (schema.equalsIgnoreCase(connection.getSchema())) {
