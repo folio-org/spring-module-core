@@ -11,7 +11,6 @@ import org.folio.spring.tenant.properties.BuildInfoProperties;
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
-import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
 import org.springframework.boot.jpa.autoconfigure.JpaProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,11 +27,9 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 public class HibernateMultiTenantConfig {
 
   /**
-   * Initializer.
+   * The packages to scan string for the entity manager.
    */
-  HibernateMultiTenantConfig() {
-    // Do nothing.
-  }
+  public static final String PACKAGES_TO_SCAN = "org.folio.rest";
 
   @Bean
   BuildInfoProperties buildInfoProperties() {
@@ -64,7 +61,6 @@ public class HibernateMultiTenantConfig {
   @Bean
   @Primary
   LocalContainerEntityManagerFactoryBean entityManagerFactory(
-    EntityManagerFactoryBuilder entityManagerFactoryBuilder,
     DataSource dataSource,
     JpaProperties jpaProperties,
     @SuppressWarnings("rawtypes") MultiTenantConnectionProvider multiTenantConnectionProvider,

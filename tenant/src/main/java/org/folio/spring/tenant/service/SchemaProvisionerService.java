@@ -1,17 +1,25 @@
 package org.folio.spring.tenant.service;
 
-import jakarta.persistence.EntityManagerFactory;
+import static org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
+import static org.springframework.core.io.support.SpringFactoriesLoader.forDefaultResourceLocation;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import org.folio.spring.tenant.config.SpringDataSourceConfig;
 import org.folio.spring.tenant.interfaces.TenantDatabaseProvisioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.support.SpringFactoriesLoader;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,33 +30,60 @@ public class SchemaProvisionerService {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaProvisionerService.class);
 
-  private final EntityManagerFactory entityManagerFactory;
+  private final ApplicationContext applicationContext;
 
-  private final SpringDataSourceConfig springDatasourceConfig;
+  private final DataSource provisioningDataSource;
 
   private final ConcurrentHashMap<String, Boolean> provisioned;
 
   private final List<TenantDatabaseProvisioner> provisioners;
 
+  private final SpringDataSourceConfig springDatasourceConfig;
+
   /**
    * Initializer.
    *
-   * @param entityManagerFactory   The entity manager factory.
+   * @param applicationContext     The application context.
    * @param springDatasourceConfig The Spring data source configuration.
    */
-  public SchemaProvisionerService(EntityManagerFactory entityManagerFactory, SpringDataSourceConfig springDatasourceConfig) {
+  public SchemaProvisionerService(ApplicationContext applicationContext, SpringDataSourceConfig springDatasourceConfig) {
 
-    this.entityManagerFactory = entityManagerFactory;
+    this.applicationContext = applicationContext;
     this.springDatasourceConfig = springDatasourceConfig;
 
     provisioned = new ConcurrentHashMap<>();
+    provisioners = new ArrayList<>();
 
-    provisioners = SpringFactoriesLoader
-      .forDefaultResourceLocation(getClass().getClassLoader())
-      .load(
-        TenantDatabaseProvisioner.class,
-        SpringFactoriesLoader.ArgumentResolver.of(EntityManagerFactory.class, this.entityManagerFactory)
-      );
+    final HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(this.springDatasourceConfig.getUrl());
+    config.setUsername(this.springDatasourceConfig.getUsername());
+    config.setPassword(this.springDatasourceConfig.getPassword());
+    config.setMaximumPoolSize(1);
+    config.setPoolName(SchemaProvisionerService.class.getSimpleName());
+
+    this.provisioningDataSource = new HikariDataSource(config);
+  }
+
+  /**
+   * Populate the provisioners after everything is loaded.
+   *
+   * This is necessary here to avoid circular dependencies with the entity manager.
+   * This cannot be performed during the class initialization.
+   */
+  @EventListener(ContextRefreshedEvent.class)
+  public void contextRefreshedEventInit() {
+
+    provisioners.clear();
+
+    provisioners.addAll(
+      forDefaultResourceLocation(getClass().getClassLoader())
+        .load(
+          TenantDatabaseProvisioner.class,
+          ArgumentResolver
+            .of(ApplicationContext.class, this.applicationContext)
+            .and(DataSource.class, provisioningDataSource)
+        )
+    );
   }
 
   /**
@@ -93,8 +128,6 @@ public class SchemaProvisionerService {
    */
   public void ensureProvisionedSchema(String schema, String tenant, Connection connection) {
 
-    LOG.debug("Ensuring provisioned schema '{}' for tenant '{}', total provisioners is {}.", schema, tenant, provisioners.size());
-
     if (provisioners.isEmpty()) {
       return;
     }
@@ -102,6 +135,8 @@ public class SchemaProvisionerService {
     final Iterator<TenantDatabaseProvisioner> iter = provisioners.iterator();
 
     provisioned.computeIfAbsent(schema, key -> {
+      LOG.debug("Ensuring provisioned schema '{}' for tenant '{}', total provisioners is {}.", schema, tenant, provisioners.size());
+
       try {
         while (iter.hasNext()) {
           iter.next()

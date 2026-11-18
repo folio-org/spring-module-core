@@ -11,6 +11,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,24 +32,25 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   private final transient SchemaService schemaService;
 
-  private final transient SchemaProvisionerService schemaProvisionerService;
+  // Must use ObjectProvider because this class must be fully configured before the EntityManagerFactory required by SchemaProvisionerService may exist.
+  private final transient ObjectProvider<SchemaProvisionerService> schemaProvisionerServiceObject;
 
   /**
    * Initializer.
    *
-   * @param dataSource               The data source.
-   * @param schemaService            The schema service.
-   * @param schemaProvisionerService The schema provisioner service.
+   * @param dataSource                     The data source.
+   * @param schemaService                  The schema service.
+   * @param schemaProvisionerServiceObject An object provider for the schema provisioner service.
    */
   public HibernateMultiTenantConnectionProvider(
-    DataSource dataSource, SchemaService schemaService, SchemaProvisionerService schemaProvisionerService
+    DataSource dataSource, SchemaService schemaService, ObjectProvider<SchemaProvisionerService> schemaProvisionerServiceObject
   ) {
 
     super();
 
     this.dataSource = dataSource;
     this.schemaService = schemaService;
-    this.schemaProvisionerService = schemaProvisionerService;
+    this.schemaProvisionerServiceObject = schemaProvisionerServiceObject;
   }
 
   @Override
@@ -60,9 +62,9 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
     LOG.debug("Requesting **ANY** connection, with thread local storage tenant of '{}' and schema '{}'.", tenant, connection.getSchema());
 
-    if (tenant != null && !tenant.isBlank()) {
-      alterSchema(tenant, connection);
-    }
+    //if (tenant != null && !tenant.isBlank()) {
+    //  alterSchema(tenant, connection);
+    //}
 
     return connection;
   }
@@ -131,7 +133,9 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
         return;
       }
 
-      schemaProvisionerService.ensureProvisionedSchema(schema, tenant, connection); 
+      schemaProvisionerServiceObject
+        .getObject()
+        .ensureProvisionedSchema(schema, tenant, connection); 
 
       // Do not change schema if already set.
       if (schema.equalsIgnoreCase(connection.getSchema())) {
