@@ -1,6 +1,5 @@
 package org.folio.spring.tenant.interfaces;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
@@ -13,11 +12,10 @@ public interface TenantDatabaseProvisioner {
   /**
    * Provision a schema using the provided connection.
    *
-   * @param schema     The schema name.
-   * @param tenant     The tenant name.
-   * @param connection The connection to use.
+   * @param schema The schema name.
+   * @param tenant The tenant name.
    *
    * @throws SQLException On SQL error.
    */
-  public void provisionSchema(String schema, String tenant, Connection connection) throws SQLException;
+  public void provisionSchema(String schema, String tenant) throws SQLException;
 }

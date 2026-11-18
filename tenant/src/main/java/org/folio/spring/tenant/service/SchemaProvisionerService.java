@@ -1,12 +1,7 @@
 package org.folio.spring.tenant.service;
 
-import static org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
 import static org.springframework.core.io.support.SpringFactoriesLoader.forDefaultResourceLocation;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -20,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.stereotype.Service;
 
 /**
@@ -54,14 +51,11 @@ public class SchemaProvisionerService {
     provisioned = new ConcurrentHashMap<>();
     provisioners = new ArrayList<>();
 
-    final HikariConfig config = new HikariConfig();
-    config.setJdbcUrl(this.springDatasourceConfig.getUrl());
-    config.setUsername(this.springDatasourceConfig.getUsername());
-    config.setPassword(this.springDatasourceConfig.getPassword());
-    config.setMaximumPoolSize(1);
-    config.setPoolName(SchemaProvisionerService.class.getSimpleName());
-
-    this.provisioningDataSource = new HikariDataSource(config);
+    this.provisioningDataSource = new DriverManagerDataSource(
+      this.springDatasourceConfig.getUrl(),
+      this.springDatasourceConfig.getUsername(),
+      this.springDatasourceConfig.getPassword()
+    );
   }
 
   /**
@@ -100,38 +94,6 @@ public class SchemaProvisionerService {
       return;
     }
 
-    provisioned.computeIfAbsent(schema, key -> {
-      try (
-        final Connection connection = DriverManager.getConnection(
-          springDatasourceConfig.getUrl(),
-          springDatasourceConfig.getUsername(),
-          springDatasourceConfig.getPassword()
-        );
-      ) {
-        ensureProvisionedSchema(schema, tenant, connection);
-
-        return true;
-      } catch (SQLException e) {
-        throw new RuntimeException(String.format("Failed to provision a schema '%s' and tenant '%s'.", schema, tenant), e);
-      }
-    });
-  }
-
-  /**
-   * Ensure that the given schema is properly provisioned.
-   *
-   * This calls all of the implementations of TenantDatabasProvisioner.
-   *
-   * @param schema     The schema name.
-   * @param tenant     The tenant name.
-   * @param connection The connection to use.
-   */
-  public void ensureProvisionedSchema(String schema, String tenant, Connection connection) {
-
-    if (provisioners.isEmpty()) {
-      return;
-    }
-
     final Iterator<TenantDatabaseProvisioner> iter = provisioners.iterator();
 
     provisioned.computeIfAbsent(schema, key -> {
@@ -140,7 +102,7 @@ public class SchemaProvisionerService {
       try {
         while (iter.hasNext()) {
           iter.next()
-            .provisionSchema(schema, tenant, connection);
+            .provisionSchema(schema, tenant);
         }
 
         return true;

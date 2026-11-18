@@ -63,13 +63,11 @@ public class HibernateMultiTenantConfig {
   LocalContainerEntityManagerFactoryBean entityManagerFactory(
     DataSource dataSource,
     JpaProperties jpaProperties,
-    @SuppressWarnings("rawtypes") MultiTenantConnectionProvider multiTenantConnectionProvider,
     @SuppressWarnings("rawtypes") CurrentTenantIdentifierResolver currentTenantIdentifierResolver
   ) {
 
     final Map<String, Object> properties = new HashMap<>();
     properties.putAll(jpaProperties.getProperties());
-    properties.put(MULTI_TENANT_CONNECTION_PROVIDER, multiTenantConnectionProvider);
     properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, currentTenantIdentifierResolver);
 
     // Remove the auto-prepended schema name and allow for the search_path to always take precedence.
@@ -80,7 +78,7 @@ public class HibernateMultiTenantConfig {
 
     final LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
     em.setDataSource(dataSource);
-    em.setPackagesToScan("org.folio.rest");
+    em.setPackagesToScan(PACKAGES_TO_SCAN);
     em.setJpaVendorAdapter(jpaVendorAdapter());
     em.setJpaPropertyMap(properties);
 

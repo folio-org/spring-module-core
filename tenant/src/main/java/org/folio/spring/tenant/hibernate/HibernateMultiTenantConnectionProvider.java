@@ -58,20 +58,15 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
     final String tenant = ThreadLocalStorage.getTenant();
 
-    final Connection connection = dataSource.getConnection();
+    LOG.debug("Requesting **ANY** connection, with thread local storage tenant of '{}'.", tenant);
 
-    LOG.debug("Requesting **ANY** connection, with thread local storage tenant of '{}' and schema '{}'.", tenant, connection.getSchema());
-
-    //if (tenant != null && !tenant.isBlank()) {
-    //  alterSchema(tenant, connection);
-    //}
-
-    return connection;
+    return dataSource.getConnection();
   }
 
   @Override
   public Connection getConnection(String tenant) throws SQLException {
-    final Connection connection = getAnyConnection();
+
+    final Connection connection = dataSource.getConnection();
 
     LOG.debug("Requesting connection for tenant '{}' with schema '{}'.", tenant, connection.getSchema());
 
@@ -135,7 +130,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
       schemaProvisionerServiceObject
         .getObject()
-        .ensureProvisionedSchema(schema, tenant, connection); 
+        .ensureProvisionedSchema(schema, tenant); 
 
       // Do not change schema if already set.
       if (schema.equalsIgnoreCase(connection.getSchema())) {
