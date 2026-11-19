@@ -29,6 +29,8 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.hibernate.tool.schema.TargetType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.hibernate.autoconfigure.HibernateProperties;
@@ -46,77 +48,84 @@ import org.springframework.stereotype.Service;
 @Service("hibernateSchemaService")
 public class HibernateSchemaService implements InitializingBean {
 
+  private static final Logger LOG = LoggerFactory.getLogger(HibernateSchemaService.class);
+
   /**
    * Connection driver class.
    */
-  protected static final String CONNECTION_DRIVER_CLASS = "connection.driver_class";
+  public static final String CONNECTION_DRIVER_CLASS = "connection.driver_class";
 
   /**
    * Dialect.
    */
-  protected static final String DIALECT = "dialect";
+  public static final String DIALECT = "dialect";
+
+  /**
+   * Domain packages class path.
+   */
+  public static final String DOMAIN_PACKAGES = "org.folio.rest.model";
 
   /**
    * Database platform.
    */
-  protected static final String DATABASE_PLATFORM = "database-platform";
+  public static final String DATABASE_PLATFORM = "database-platform";
 
   /**
    * Hibernate default schema.
    */
-  protected static final String HIBERNATE_DEFAULT_SCHEMA = "hibernate.default_schema";
+  public static final String HIBERNATE_DEFAULT_SCHEMA = "hibernate.default-schema";
 
   /**
    * Hibernate ddl-auto.
    */
-  protected static final String HIBERNATE_DDLAUTO = "hibernate.ddl-auto";
+  public static final String HIBERNATE_DDLAUTO = "hibernate.ddl-auto";
 
   /**
    * Hibernation connection URL.
    */
-  protected static final String HIBERNATE_CONNECTION_URL = "hibernate.connection.url";
+  public static final String HIBERNATE_CONNECTION_URL = "hibernate.connection.url";
 
   /**
    * Hibernate connection driver class.
    */
-  protected static final String HIBERNATE_CONNECTION_DRIVER_CLASS = "hibernate.connection.driver_class";
+  public static final String HIBERNATE_CONNECTION_DRIVER_CLASS = "hibernate.connection.driver_class";
 
   /**
    * Hibernate connection user name.
    */
-  protected static final String HIBERNATE_CONNECTION_USERNAME = "hibernate.connection.username";
+  public static final String HIBERNATE_CONNECTION_USERNAME = "hibernate.connection.username";
 
   /**
    * Hibernate connection pass.
    */
-  protected static final String HIBERNATE_CONNECTION_PASSWORD = "hibernate.connection.password";
+  public static final String HIBERNATE_CONNECTION_PASSWORD = "hibernate.connection.password";
 
   /**
    * Hibernate hbm2ddl auto.
    */
-  protected static final String HIBERNATE_HBM2DDL_AUTO = "hibernate.hbm2ddl.auto";
+  public static final String HIBERNATE_HBM2DDL_AUTO = "hibernate.hbm2ddl.auto";
 
   /**
    * Hibernate JDBC LONBB non-contextual creation.
    */
-  protected static final String HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION = "hibernate.jdbc.lob.non_contextual_creation";
+  public static final String HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION = "hibernate.jdbc.lob.non_contextual_creation";
 
   /**
    * Hibernate open in view.
    */
-  protected static final String HIBERNATE_OPENINVIEW = "hibernate.open-in-view";
+  public static final String HIBERNATE_OPENINVIEW = "hibernate.open-in-view";
 
   /**
    * Hibernate show SQL.
    */
-  protected static final String HIBERNATE_SHOWSQL = "hibernate.show-sql";
+  public static final String HIBERNATE_SHOWSQL = "hibernate.show-sql";
 
   /**
    * Hibernate query schema existence SQL query.
    *
    * This accepts a single argument for the query name.
    */
-  protected static final String QUERY_SCHEMA_EXISTS = "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ?)";
+  public static final String QUERY_SCHEMA_EXISTS = "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ?)";
 
   private final List<String> domainPackages = new ArrayList<String>();
 
@@ -166,7 +175,9 @@ public class HibernateSchemaService implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() throws Exception {
-    domainPackages.add("org.folio.rest.model");
+    LOG.debug("Performing after properties set action for domain packages '{}'.", DOMAIN_PACKAGES);
+
+    domainPackages.add(DOMAIN_PACKAGES);
 
     for (String additionalDomainPackage : tenantProperties.getDomainPackages()) {
       domainPackages.add(additionalDomainPackage);
@@ -203,7 +214,7 @@ public class HibernateSchemaService implements InitializingBean {
 
     try (final Connection connection = getConnection(settings)) {
       if (schemaExists(connection, settings)) {
-        throw new TenantAlreadyExistsException("Tenant already exists: " + tenant);
+        throw new TenantAlreadyExistsException(String.format("Tenant '%s' already exists.", tenant));
       }
 
       initializeSchema(connection, settings);
@@ -222,7 +233,7 @@ public class HibernateSchemaService implements InitializingBean {
 
     try (final Connection connection = getConnection(settings)) {
       if (!schemaExists(connection, settings)) {
-        throw new TenantDoesNotExistsException("Tenant does not exist: " + tenant);
+        throw new TenantDoesNotExistsException(String.format("Tenant '%s' does not exist.", tenant));
       }
 
       dropSchema(connection, getSchema(settings));
@@ -258,12 +269,14 @@ public class HibernateSchemaService implements InitializingBean {
   protected void initializeSchema(Connection connection, Map<String, String> settings) throws SQLException, IOException {
     final String schema = getSchema(settings);
 
+    LOG.debug("Initializing schema '{}'.", schema);
+
     createSchema(connection, schema);
     createTables(settings);
     createAdditionalSchema(connection, schema);
     initializeData(connection, schema);
 
-    for (HibernateTenantInit hibernateTenantInitialization : hibernateTenantInitializations) {
+    for (final HibernateTenantInit hibernateTenantInitialization : hibernateTenantInitializations) {
       hibernateTenantInitialization.initialize(connection, schema);
     }
   }
@@ -277,7 +290,7 @@ public class HibernateSchemaService implements InitializingBean {
    * @throws SQLException On error.
    */
   protected void createSchema(Connection connection, String schema) throws SQLException {
-    try (Statement statement = connection.createStatement()) {
+    try (final Statement statement = connection.createStatement()) {
       statement.executeUpdate(String.format("CREATE SCHEMA IF NOT EXISTS %s;", schema));
     }
   }
@@ -348,7 +361,7 @@ public class HibernateSchemaService implements InitializingBean {
    * @throws SQLException On error.
    */
   protected void dropSchema(Connection connection, String schema) throws SQLException {
-    try (Statement statement = connection.createStatement()) {
+    try (final Statement statement = connection.createStatement()) {
       statement.executeUpdate(String.format("DROP SCHEMA IF EXISTS %s CASCADE;", schema));
     }
   }
@@ -365,7 +378,7 @@ public class HibernateSchemaService implements InitializingBean {
    */
   protected boolean schemaExists(Connection connection, Map<String, String> settings) throws SQLException {
 
-    try (PreparedStatement statement = connection.prepareStatement(QUERY_SCHEMA_EXISTS)) {
+    try (final PreparedStatement statement = connection.prepareStatement(QUERY_SCHEMA_EXISTS)) {
       statement.setString(1, getSchema(settings));
 
       final ResultSet resultSet = statement.executeQuery();
