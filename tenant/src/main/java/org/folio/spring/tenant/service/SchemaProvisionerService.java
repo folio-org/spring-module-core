@@ -134,6 +134,15 @@ public class SchemaProvisionerService {
   }
 
   /**
+   * Get the provisoning data source.
+   *
+   * @return The data source.
+   */
+  public DataSource getDataSource() {
+    return provisioningDataSource;
+  }
+
+  /**
    * Clean up provisioning service, properly closing pooled connections.
    */
   @PreDestroy

@@ -55,61 +55,61 @@ public class HibernateSchemaDataSource implements DataSource {
     return connection;
   }
 
+  @Override
+  public Connection getConnection(String username, String password) throws SQLException {
+
+    final Connection connection = dataSource.getConnection(username, password);
+    final String tenant = ThreadLocalStorage.getTenant();
+
+    if (tenant != null) {
+      final String schema = schemaService.getSchema(tenant);
+
+      LOG.debug("Using schema '{}' with tenant of '{}'.", schema, tenant);
+
+      connection.setSchema(schema);
+
+      try (Statement statement = connection.createStatement()) {
+        statement.execute(String.format("SET search_path TO %s, public", schema));
+      }
+    }
+
+    return connection;
+  }
+
    @Override
-    public Connection getConnection(String username, String password) throws SQLException {
+   public PrintWriter getLogWriter() throws SQLException {
+     return dataSource.getLogWriter();
+   }
 
-     final Connection connection = dataSource.getConnection(username, password);
-     final String tenant = ThreadLocalStorage.getTenant();
+   @Override
+   public void setLogWriter(PrintWriter out) throws SQLException {
+     dataSource.setLogWriter(out);
+   }
 
-     if (tenant != null) {
-       final String schema = schemaService.getSchema(tenant);
+   @Override
+   public void setLoginTimeout(int seconds) throws SQLException {
+     dataSource.setLoginTimeout(seconds);
+   }
 
-       LOG.debug("Using schema '{}' with tenant of '{}'.", schema, tenant);
+   @Override
+   public int getLoginTimeout() throws SQLException {
+     return dataSource.getLoginTimeout();
+   }
 
-       connection.setSchema(schema);
+   @Override
+   public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+     return dataSource.getParentLogger();
+   }
 
-       try (Statement statement = connection.createStatement()) {
-         statement.execute(String.format("SET search_path TO %s, public", schema));
-       }
-     }
+   @Override
+   public <T> T unwrap(Class<T> iface) throws SQLException {
+     return dataSource.unwrap(iface);
+   }
 
-     return connection;
-    }
-
-    @Override
-    public PrintWriter getLogWriter() throws SQLException {
-      return dataSource.getLogWriter();
-    }
-
-    @Override
-    public void setLogWriter(PrintWriter out) throws SQLException {
-      dataSource.setLogWriter(out);
-    }
-
-    @Override
-    public void setLoginTimeout(int seconds) throws SQLException {
-      dataSource.setLoginTimeout(seconds);
-    }
-
-    @Override
-    public int getLoginTimeout() throws SQLException {
-      return dataSource.getLoginTimeout();
-    }
-
-    @Override
-    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-      return dataSource.getParentLogger();
-    }
-
-    @Override
-    public <T> T unwrap(Class<T> iface) throws SQLException {
-      return dataSource.unwrap(iface);
-    }
-
-    @Override
-    public boolean isWrapperFor(Class<?> iface) throws SQLException {
-      return dataSource.isWrapperFor(iface);
-    }
+   @Override
+   public boolean isWrapperFor(Class<?> iface) throws SQLException {
+     return dataSource.isWrapperFor(iface);
+   }
 
 }
 
