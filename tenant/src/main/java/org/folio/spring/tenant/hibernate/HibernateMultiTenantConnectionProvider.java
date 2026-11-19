@@ -104,7 +104,11 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
     LOG.debug("Releasing connection for tenant '{}' with schema '{}'.", tenant, connection.getSchema());
 
-    alterSchema(tenant, connection);
+    try (final Statement statement = connection.createStatement()) {
+      statement.execute("RESET search_path");
+    }
+
+    connection.close();
   }
 
   @Override
