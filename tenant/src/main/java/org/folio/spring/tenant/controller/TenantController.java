@@ -7,8 +7,10 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 import java.io.IOException;
 import java.sql.SQLException;
 import org.folio.spring.tenant.annotation.TenantHeader;
-import org.folio.spring.tenant.hibernate.HibernateSchemaService;
 import org.folio.spring.tenant.model.request.TenantAttributes;
+import org.folio.spring.tenant.service.SchemaService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -23,16 +25,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/_/tenant")
 public class TenantController {
 
-  private HibernateSchemaService hibernateSchemaService;
+  private static final Logger LOG = LoggerFactory.getLogger(TenantController.class);
+
+  private final SchemaService schemaService;
 
   /**
    * Initializer.
    *
-   * @param hibernateSchemaService The hibernateSchemaService instance.
+   * @param schemaService The schema service.
    */
-  public TenantController(HibernateSchemaService hibernateSchemaService) {
+  public TenantController(SchemaService schemaService) {
 
-    this.hibernateSchemaService = hibernateSchemaService;
+    this.schemaService = schemaService;
   }
 
   @PostMapping
@@ -45,7 +49,10 @@ public class TenantController {
       return ResponseEntity.status(406).build();
     }
 
-    hibernateSchemaService.createTenant(tenant);
+    LOG.debug("Creating schema for tenant '{}'.", tenant);
+
+    schemaService.createTenant(tenant);
+
     return new ResponseEntity<>("Success", CREATED);
   }
 
@@ -58,7 +65,10 @@ public class TenantController {
       return ResponseEntity.status(406).build();
     }
 
-    hibernateSchemaService.deleteTenant(tenant);
+    LOG.debug("Deleting schema for tenant '{}'.", tenant);
+
+    schemaService.deleteTenant(tenant);
+
     return new ResponseEntity<>(NO_CONTENT);
   }
 

@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
-import org.folio.spring.tenant.hibernate.HibernateSchemaService;
+import org.folio.spring.tenant.service.SchemaService;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -61,12 +61,12 @@ class TenantControllerTest {
   private MockMvc mvc;
 
   @MockitoBean
-  private HibernateSchemaService hibernateSchemaService;
+  private SchemaService schemaService;
 
   @ParameterizedTest
   @MethodSource("provideHeadersBodyStatusForCreate")
   void createPostWorksTest(HttpHeaders headers, String contentType, String accept, MediaType mediaType, MultiValueMap<String, String> parameters, String body, int status) throws Exception {
-    lenient().doNothing().when(hibernateSchemaService).createTenant(anyString());
+    lenient().doNothing().when(schemaService).createTenant(anyString());
 
     MockHttpServletRequestBuilder request = appendHeaders(post(PATH), headers, contentType, accept);
 
@@ -91,7 +91,7 @@ class TenantControllerTest {
   @ParameterizedTest
   @MethodSource("provideHeadersBodyStatusForDelete")
   void deletePostWorksTest(HttpHeaders headers, String contentType, String accept, MediaType mediaType, MultiValueMap<String, String> parameters, String body, int status) throws Exception {
-    lenient().doNothing().when(hibernateSchemaService).createTenant(anyString());
+    lenient().doNothing().when(schemaService).createTenant(anyString());
 
     MockHttpServletRequestBuilder request = appendHeaders(delete(PATH), headers, contentType, accept);
 

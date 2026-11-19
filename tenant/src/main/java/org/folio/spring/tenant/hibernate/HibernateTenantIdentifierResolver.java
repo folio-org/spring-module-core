@@ -16,7 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * Construct or return the tenant as needed while resolving the tenant identifier for Hibernate.
  */
 @Component
-@DependsOn("hibernateSchemaService")
+//@DependsOn("hibernateSchemaService")
 public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
 
   private final TenantProperties tenantProperties;
