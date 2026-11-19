@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import org.folio.spring.tenant.config.SpringDataSourceConfig;
+import org.folio.spring.tenant.hibernate.HibernateSchemaService;
 import org.folio.spring.tenant.interfaces.TenantDatabaseProvisioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ public class SchemaProvisionerService {
 
   private final ConcurrentHashMap<String, Object> schemaLocks;
 
-  private final SchemaService schemaService;
+  private final HibernateSchemaService hibernateSchemaService;
 
   private final SpringDataSourceConfig springDatasourceConfig;
 
@@ -49,13 +50,16 @@ public class SchemaProvisionerService {
    * Initializer.
    *
    * @param applicationContext     The application context.
-   * @param schemaService          The schema service.
+   * @param hibernateSchemaService The schema service.
    * @param springDatasourceConfig The Spring data source configuration.
    */
-  public SchemaProvisionerService(ApplicationContext applicationContext, SchemaService schemaService, SpringDataSourceConfig springDatasourceConfig) {
+  public SchemaProvisionerService(
+    ApplicationContext applicationContext, HibernateSchemaService hibernateSchemaService,
+    SpringDataSourceConfig springDatasourceConfig
+  ) {
 
     this.applicationContext = applicationContext;
-    this.schemaService = schemaService;
+    this.hibernateSchemaService = hibernateSchemaService;
     this.springDatasourceConfig = springDatasourceConfig;
 
     // Pool size is exactly 2, one for the schema creation and one for the auto-schema creation.
@@ -91,7 +95,7 @@ public class SchemaProvisionerService {
           ArgumentResolver
             .of(ApplicationContext.class, applicationContext)
             .and(DataSource.class, provisioningDataSource)
-            .and(SchemaService.class, schemaService)
+            .and(HibernateSchemaService.class, hibernateSchemaService)
         )
     );
 

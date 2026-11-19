@@ -18,8 +18,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import javax.sql.DataSource;
-
-import org.folio.spring.tenant.service.SchemaService;
 import org.hibernate.HibernateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +42,7 @@ public class HibernateMultiTenantConnectionProviderTest {
   private static final SQLException SQL_EXC = new SQLException("failure");
 
   @Mock
-  private SchemaService schemaService;
+  private HibernateSchemaService schemaService;
 
   @Mock
   private DataSource dataSource;
@@ -60,7 +58,7 @@ public class HibernateMultiTenantConnectionProviderTest {
 
   @BeforeEach
   void beforeEach() throws SQLException {
-    lenient().when(schemaService.getSchema(eq(TENANT))).thenReturn(SCHEMA);
+    lenient().when(schemaService.getTenantSchema(eq(TENANT))).thenReturn(SCHEMA);
     lenient().when(dataSource.getConnection()).thenReturn(connection);
     lenient().when(connection.createStatement()).thenReturn(statement);
 

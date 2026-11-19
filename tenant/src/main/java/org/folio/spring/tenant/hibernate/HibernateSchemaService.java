@@ -1,4 +1,4 @@
-package org.folio.spring.tenant.service;
+package org.folio.spring.tenant.hibernate;
 
 import jakarta.persistence.Entity;
 import java.io.File;
@@ -23,9 +23,9 @@ import org.apache.commons.io.IOUtils;
 import org.folio.spring.tenant.config.JpaPropertiesHibernateConfig;
 import org.folio.spring.tenant.exception.TenantAlreadyExistsException;
 import org.folio.spring.tenant.exception.TenantDoesNotExistsException;
-import org.folio.spring.tenant.hibernate.HibernateTenantInit;
 import org.folio.spring.tenant.properties.BuildInfoProperties;
 import org.folio.spring.tenant.properties.TenantProperties;
+import org.folio.spring.tenant.service.SqlTemplateService;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -34,6 +34,7 @@ import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.hibernate.tool.schema.TargetType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.hibernate.autoconfigure.HibernateProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
@@ -45,12 +46,12 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for managing schemas.
+ * Hibernate service for managing schemas.
  */
-@Service
-public class SchemaService {
+@Service("hibernateSchemaService")
+public class HibernateSchemaService implements InitializingBean {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SchemaService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(HibernateSchemaService.class);
 
   /**
    * Connection driver class.
@@ -75,7 +76,7 @@ public class SchemaService {
   /**
    * Hibernate default schema.
    */
-  public static final String HIBERNATE_DEFAULT_SCHEMA = "hibernate.default-schema";
+  public static final String HIBERNATE_DEFAULT_SCHEMA = "hibernate.default_schema";
 
   /**
    * Hibernate ddl-auto.
@@ -136,13 +137,9 @@ public class SchemaService {
 
   private final BuildInfoProperties buildInfoProperties;
 
-  private final JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig;
-
-  private final TenantProperties tenantProperties;
-
-  private final List<String> domainPackages = new ArrayList<String>();
-
   private final DataSourceProperties dataSourceProperties;
+
+  private final List<String> domainPackages;
 
   private final HibernateProperties hibernateProperties;
 
@@ -150,43 +147,121 @@ public class SchemaService {
 
   private final JpaProperties jpaProperties;
 
+  private final JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig;
+
   private final ResourceLoader resourceLoader;
 
   private final SqlTemplateService sqlTemplateService;
 
+  private final TenantProperties tenantProperties;
+
   /**
    * Initializer.
    *
+   * @param buildInfoProperties            The build information properties.
    * @param dataSourceProperties           The data source properties.
    * @param hibernateProperties            The Hibernate properties.
    * @param hibernateTenantInitializations The Hibernate tenant initializations.
    * @param jpaProperties                  The JPA properties.
+   * @param jpaPropertiesHibernateConfig   The JPA properties Hibernate configuration.
    * @param resourceLoader                 The resource loader.
-   * @param buildInfoProperties          The build information properties.
-   * @param jpaPropertiesHibernateConfig The JPA properties Hibernate configuration.
-   * @param springDatasourceConfig       The Spring data source configuration.
-   * @param tenantProperties             The tenant properties.
+   * @param springDatasourceConfig         The Spring data source configuration.
+   * @param tenantProperties               The tenant properties.
    */
-  public SchemaService(
-    DataSourceProperties dataSourceProperties, HibernateProperties hibernateProperties,
-    List<HibernateTenantInit> hibernateTenantInitializations, JpaProperties jpaProperties, ResourceLoader resourceLoader,
-    SqlTemplateService sqlTemplateService, TenantProperties tenantProperties,
-    BuildInfoProperties buildInfoProperties, JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig
+  public HibernateSchemaService(
+    BuildInfoProperties buildInfoProperties, DataSourceProperties dataSourceProperties,
+    HibernateProperties hibernateProperties, List<HibernateTenantInit> hibernateTenantInitializations,
+    JpaProperties jpaProperties, JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig,
+    ResourceLoader resourceLoader, SqlTemplateService sqlTemplateService, TenantProperties tenantProperties
   ) {
 
+    this.buildInfoProperties = buildInfoProperties;
     this.dataSourceProperties = dataSourceProperties;
     this.hibernateProperties = hibernateProperties;
-    this.jpaProperties = jpaProperties;
     this.hibernateTenantInitializations = hibernateTenantInitializations == null ? new ArrayList<>() : hibernateTenantInitializations;
-    this.resourceLoader = resourceLoader;
-    this.buildInfoProperties = buildInfoProperties;
+    this.jpaProperties = jpaProperties;
     this.jpaPropertiesHibernateConfig = jpaPropertiesHibernateConfig;
+    this.resourceLoader = resourceLoader;
     this.sqlTemplateService = sqlTemplateService;
     this.tenantProperties = tenantProperties;
+
+    domainPackages = new ArrayList<String>();
   }
 
   /**
-   * Provide the database schema formatted for use by a given tenant.
+   * Perform actions after the properties are set.
+   *
+   * @throws Exception On error.
+   */
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    LOG.debug("Performing after properties set action for domain packages '{}'.", DOMAIN_PACKAGES);
+
+    domainPackages.add(DOMAIN_PACKAGES);
+
+    for (String additionalDomainPackage : tenantProperties.getDomainPackages()) {
+      domainPackages.add(additionalDomainPackage);
+    }
+
+    if (tenantProperties.isInitializeDefaultTenant()) {
+      final String tenant = tenantProperties.getDefaultTenant();
+      final Map<String, String> settings = getSettings(tenant);
+
+      try (Connection connection = getConnection(settings)) {
+        if (tenantProperties.isRecreateDefaultTenant()) {
+          if (schemaExists(connection, tenant)) {
+            deleteTenant(tenant);
+          }
+
+          initializeSchema(connection, settings);
+        } else if (!schemaExists(connection, tenant)) {
+          initializeSchema(connection, settings);
+        }
+      }
+    }
+  }
+
+  /**
+   * Create the schema by tenant.
+   *
+   * @param tenant The tenant name.
+   *
+   * @throws SQLException On error.
+   * @throws IOException  On error.
+   */
+  public void createTenant(String tenant) throws SQLException, IOException {
+    final Map<String, String> settings = getSettings(tenant);
+
+    try (final Connection connection = getConnection(settings)) {
+      if (schemaExists(connection, tenant)) {
+        throw new TenantAlreadyExistsException(String.format("Tenant '%s' already exists.", tenant));
+      }
+
+      initializeSchema(connection, settings);
+    }
+  }
+
+  /**
+   * Delete the schema by tenant.
+   *
+   * @param tenant The tenant name.
+   *
+   * @throws SQLException On error.
+   */
+  public void deleteTenant(String tenant) throws SQLException {
+    final Map<String, String> settings = getSettings(tenant);
+
+    try (final Connection connection = getConnection(settings)) {
+      if (!schemaExists(connection, tenant)) {
+        throw new TenantDoesNotExistsException(String.format("Tenant '%s' does not exist.", tenant));
+      }
+
+      dropSchema(connection, getBaseSchema(settings));
+    }
+  }
+
+  /**
+   * Provide the complete database schema formatted for use by a given tenant.
    *
    * This generation relies on the `spring.jpa.properties.hibernate.default_schema` property handled by `JpaConfig`, using the provided value as a base for the schema name.
    * The tenant value is then prepended to the base schema.
@@ -197,9 +272,9 @@ public class SchemaService {
    *
    * @param tenant The tenant.
    *
-   * @return The formatted schema associated with the provided tenant. 
+   * @return The formatted schema associated with the provided tenant.
    */
-  public String getSchema(String tenant) {
+  public String getTenantSchema(String tenant) {
 
     if (tenant == null || tenant.trim().isEmpty()) {
       tenant = tenantProperties.getDefaultTenant();
@@ -219,83 +294,35 @@ public class SchemaService {
   }
 
   /**
-   * Validate that the given schema name is safe and valid.
-   *
-   * @param name The schema name to verify.
-   *
-   * @throws IllegalArgumentException On invalid schema name.
-   */
-  public void validateSchemaName(String name) {
-
-    if (!SCHEMA_REGEXP.matcher(name).matches()) {
-      throw new IllegalArgumentException("Illegal character in schema name: " + name);
-    }
-  }
-
-  public void afterPropertiesSet() throws Exception {
-    LOG.debug("Performing after properties set action for domain packages '{}'.", DOMAIN_PACKAGES);
-
-    domainPackages.add(DOMAIN_PACKAGES);
-
-    for (String additionalDomainPackage : tenantProperties.getDomainPackages()) {
-      domainPackages.add(additionalDomainPackage);
-    }
-
-    if (tenantProperties.isInitializeDefaultTenant()) {
-      final String tenant = tenantProperties.getDefaultTenant();
-      final Map<String, String> settings = getSettings(tenant);
-
-      try (Connection connection = getConnection(settings)) {
-        if (tenantProperties.isRecreateDefaultTenant()) {
-          if (schemaExists(connection, settings)) {
-            deleteTenant(tenant);
-          }
-
-          initializeSchema(connection, settings);
-        } else if (!schemaExists(connection, settings)) {
-          initializeSchema(connection, settings);
-        }
-      }
-    }
-  }
-
-  /**
-   * Create the schema by tenant.
+   * Get the settings.
    *
    * @param tenant The tenant name.
    *
-   * @throws SQLException On error.
-   * @throws IOException  On error.
+   * @return The settings.
    */
-  public void createTenant(String tenant) throws SQLException, IOException {
-    final Map<String, String> settings = getSettings(tenant);
+  public Map<String, String> getSettings(String tenant) {
+    String ddlAuto = hibernateProperties.getDdlAuto();
 
-    try (final Connection connection = getConnection(settings)) {
-      if (schemaExists(connection, settings)) {
-        throw new TenantAlreadyExistsException(String.format("Tenant '%s' already exists.", tenant));
-      }
-
-      initializeSchema(connection, settings);
+    if (ddlAuto == null) {
+      ddlAuto = "none";
     }
-  }
 
-  /**
-   * Delete the schema by tenant.
-   *
-   * @param tenant The tenant name.
-   *
-   * @throws SQLException On error.
-   */
-  public void deleteTenant(String tenant) throws SQLException {
-    final Map<String, String> settings = getSettings(tenant);
+    final Map<String, String> settings = new HashMap<String, String>();
+    settings.put(CONNECTION_DRIVER_CLASS, dataSourceProperties.getDriverClassName());
+    settings.put(DATABASE_PLATFORM, jpaProperties.getDatabasePlatform());
+    settings.put(DIALECT, jpaProperties.getDatabasePlatform());
+    settings.put(HIBERNATE_CONNECTION_URL, dataSourceProperties.getUrl());
+    settings.put(HIBERNATE_CONNECTION_DRIVER_CLASS, dataSourceProperties.getDriverClassName());
+    settings.put(HIBERNATE_CONNECTION_USERNAME, dataSourceProperties.getUsername());
+    settings.put(HIBERNATE_CONNECTION_PASSWORD, dataSourceProperties.getPassword());
+    settings.put(HIBERNATE_DDLAUTO, ddlAuto);
+    settings.put(HIBERNATE_DEFAULT_SCHEMA, getTenantSchema(tenant));
+    settings.put(HIBERNATE_HBM2DDL_AUTO, ddlAuto);
+    settings.put(HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION, jpaProperties.getProperties().getOrDefault(HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION, "true"));
+    settings.put(HIBERNATE_OPENINVIEW, Boolean.TRUE.equals(jpaProperties.getOpenInView()) ? "true" : "false");
+    settings.put(HIBERNATE_SHOWSQL, jpaProperties.isShowSql() ? "true" : "false");
 
-    try (final Connection connection = getConnection(settings)) {
-      if (!schemaExists(connection, settings)) {
-        throw new TenantDoesNotExistsException(String.format("Tenant '%s' does not exist.", tenant));
-      }
-
-      dropSchema(connection, getDefaultSchema(settings));
-    }
+    return settings;
   }
 
   /**
@@ -311,7 +338,21 @@ public class SchemaService {
     final Map<String, String> settings = getSettings(tenant);
 
     try (final Connection connection = getConnection(settings)) {
-      return schemaExists(connection, settings);
+      return schemaExists(connection, tenant);
+    }
+  }
+
+  /**
+   * Validate that the given schema name is safe and valid.
+   *
+   * @param name The schema name to verify.
+   *
+   * @throws IllegalArgumentException On invalid schema name.
+   */
+  public void validateSchemaName(String name) {
+
+    if (!SCHEMA_REGEXP.matcher(name).matches()) {
+      throw new IllegalArgumentException("Illegal character in schema name: " + name);
     }
   }
 
@@ -325,7 +366,7 @@ public class SchemaService {
    * @throws IOException  On error.
    */
   protected void initializeSchema(Connection connection, Map<String, String> settings) throws SQLException, IOException {
-    final String schema = getDefaultSchema(settings);
+    final String schema = getBaseSchema(settings);
 
     LOG.debug("Initializing schema '{}'.", schema);
 
@@ -349,7 +390,7 @@ public class SchemaService {
    */
   protected void createSchema(Connection connection, String schema) throws SQLException {
     try (final Statement statement = connection.createStatement()) {
-      statement.executeUpdate(String.format("CREATE SCHEMA IF NOT EXISTS %s;", schema));
+      statement.executeUpdate(String.format("CREATE SCHEMA IF NOT EXISTS %s", schema));
     }
   }
 
@@ -425,19 +466,38 @@ public class SchemaService {
   }
 
   /**
+   * Extract the base schema name from settings and verify it as valid.
+   *
+   * The settings names this as 'default_schema'.
+   *
+   * @param settings The settings to extract the name from.
+   *
+   * @return The schema name.
+   *
+   * @throws IllegalArgumentException On invalid schema name.
+   */
+  protected String getBaseSchema(Map<String, String> settings) {
+    final String name = settings.get(HIBERNATE_DEFAULT_SCHEMA);
+
+    validateSchemaName(name);
+
+    return name;
+  }
+
+  /**
    * Check if the schema exists.
    *
    * @param connection The connection.
-   * @param settings   The settings.
+   * @param tenant     The tenant name.
    *
    * @return TRUE if schema exists, FALSE otherwise.
    *
    * @throws SQLException On error.
    */
-  protected boolean schemaExists(Connection connection, Map<String, String> settings) throws SQLException {
+  protected boolean schemaExists(Connection connection, String tenant) throws SQLException {
 
     try (final PreparedStatement statement = connection.prepareStatement(QUERY_SCHEMA_EXISTS)) {
-      statement.setString(1, getDefaultSchema(settings));
+      statement.setString(1, getTenantSchema(tenant));
 
       final ResultSet resultSet = statement.executeQuery();
 
@@ -445,55 +505,6 @@ public class SchemaService {
         ? resultSet.getBoolean(1)
         : Boolean.FALSE;
     }
-  }
-
-  /**
-   * Get the settings.
-   *
-   * @param tenant The tenant name.
-   *
-   * @return The settings.
-   */
-  protected Map<String, String> getSettings(String tenant) {
-    String ddlAuto = hibernateProperties.getDdlAuto();
-
-    if (ddlAuto == null) {
-      ddlAuto = "none";
-    }
-
-    final Map<String, String> settings = new HashMap<String, String>();
-    settings.put(CONNECTION_DRIVER_CLASS, dataSourceProperties.getDriverClassName());
-    settings.put(DATABASE_PLATFORM, jpaProperties.getDatabasePlatform());
-    settings.put(DIALECT, jpaProperties.getDatabasePlatform());
-    settings.put(HIBERNATE_CONNECTION_URL, dataSourceProperties.getUrl());
-    settings.put(HIBERNATE_CONNECTION_DRIVER_CLASS, dataSourceProperties.getDriverClassName());
-    settings.put(HIBERNATE_CONNECTION_USERNAME, dataSourceProperties.getUsername());
-    settings.put(HIBERNATE_CONNECTION_PASSWORD, dataSourceProperties.getPassword());
-    settings.put(HIBERNATE_DDLAUTO, ddlAuto);
-    settings.put(HIBERNATE_DEFAULT_SCHEMA, getSchema(tenant));
-    settings.put(HIBERNATE_HBM2DDL_AUTO, ddlAuto);
-    settings.put(HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION, jpaProperties.getProperties().getOrDefault(HIBERNATE_JDBC_LOB_NON_CONTEXTUAL_CREATION, "true"));
-    settings.put(HIBERNATE_OPENINVIEW, Boolean.TRUE.equals(jpaProperties.getOpenInView()) ? "true" : "false");
-    settings.put(HIBERNATE_SHOWSQL, jpaProperties.isShowSql() ? "true" : "false");
-
-    return settings;
-  }
-
-  /**
-   * Extract the default schema name (base schema name) from settings and verify it as valid.
-   *
-   * @param settings The settings to extract the name from.
-   *
-   * @return The schema name.
-   * 
-   * @throws IllegalArgumentException On invalid schema name.
-   */
-  protected String getDefaultSchema(Map<String, String> settings) {
-    final String name = settings.get(HIBERNATE_DEFAULT_SCHEMA);
-
-    validateSchemaName(name);
-
-    return name;
   }
 
   /**

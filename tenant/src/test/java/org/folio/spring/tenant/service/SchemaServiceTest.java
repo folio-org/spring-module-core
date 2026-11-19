@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.folio.spring.tenant.config.JpaPropertiesHibernateConfig;
+import org.folio.spring.tenant.hibernate.HibernateSchemaService;
 import org.folio.spring.tenant.properties.BuildInfoProperties;
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.junit.jupiter.api.Nested;
@@ -16,7 +17,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest(classes = { SchemaService.class })
+@SpringBootTest(classes = { HibernateSchemaService.class })
 @EnableConfigurationProperties(value = { BuildInfoProperties.class, JpaPropertiesHibernateConfig.class, TenantProperties.class })
 @TestPropertySource(properties = {
    "info.build.artifact=mod-Baz",
@@ -25,27 +26,27 @@ import org.springframework.test.context.TestPropertySource;
 class SchemaServiceTest {
 
   @Autowired
-  private SchemaService schemaService;
+  private HibernateSchemaService schemaService;
 
   @Test
   void validSchema() {
-    assertThat(schemaService.getSchema("FooBar123"), is("foobar123_mod_baz"));
+    assertThat(schemaService.getTenantSchema("FooBar123"), is("foobar123_mod_baz"));
   }
 
   @ParameterizedTest
   @ValueSource(strings = { "ä", "?", "abc+xyz", "a1." })
   void invalidSchema(String tenant) {
-    assertThrows(IllegalArgumentException.class, () -> schemaService.getSchema(tenant));
+    assertThrows(IllegalArgumentException.class, () -> schemaService.getTenantSchema(tenant));
   }
 
   @Test
   void nullTenant() {
-    assertThat(schemaService.getSchema(null), is("foobar321_mod_baz"));
+    assertThat(schemaService.getTenantSchema(null), is("foobar321_mod_baz"));
   }
 
   @Test
   void emptyTenant() {
-    assertThat(schemaService.getSchema(""), is("foobar321_mod_baz"));
+    assertThat(schemaService.getTenantSchema(""), is("foobar321_mod_baz"));
   }
 
   @Nested 
@@ -55,7 +56,7 @@ class SchemaServiceTest {
   class SchemaServiceWithFolioSchemaTest {
     @Test
     void validSchemaByFolio() {
-      assertThat(schemaService.getSchema("FooBar123"), is("foobar123_mod_boom"));
+      assertThat(schemaService.getTenantSchema("FooBar123"), is("foobar123_mod_boom"));
     }
   }
 
@@ -66,7 +67,7 @@ class SchemaServiceTest {
   class SchemaServiceWithEmptyFolioSchemaTest {
     @Test
     void emptySchemaByFolio() {
-      assertThat(schemaService.getSchema("FooBar123"), is("foobar123_mod_baz"));
+      assertThat(schemaService.getTenantSchema("FooBar123"), is("foobar123_mod_baz"));
     }
   }
 }

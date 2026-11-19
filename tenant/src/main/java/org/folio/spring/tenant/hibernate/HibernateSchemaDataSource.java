@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import javax.sql.DataSource;
-import org.folio.spring.tenant.service.SchemaService;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ public class HibernateSchemaDataSource implements DataSource {
 
   private final DataSource dataSource;
 
-  private final SchemaService schemaService;
+  private final HibernateSchemaService hibernateSchemaService;
 
   /**
    * Initializer.
@@ -28,10 +27,10 @@ public class HibernateSchemaDataSource implements DataSource {
    * @param dataSource    The default data source.
    * @param schemaService The schema service.
    */
-  public HibernateSchemaDataSource(DataSource dataSource, SchemaService schemaService) {
+  public HibernateSchemaDataSource(DataSource dataSource, HibernateSchemaService hibernateSchemaService) {
 
     this.dataSource = dataSource;
-    this.schemaService = schemaService;
+    this.hibernateSchemaService = hibernateSchemaService;
   }
 
   @Override
@@ -41,7 +40,7 @@ public class HibernateSchemaDataSource implements DataSource {
     final String tenant = ThreadLocalStorage.getTenant();
 
     if (tenant != null) {
-      final String schema = schemaService.getSchema(tenant);
+      final String schema = hibernateSchemaService.getTenantSchema(tenant);
 
       LOG.debug("Using schema '{}' with tenant of '{}'.", schema, tenant);
 
@@ -62,7 +61,7 @@ public class HibernateSchemaDataSource implements DataSource {
      final String tenant = ThreadLocalStorage.getTenant();
 
      if (tenant != null) {
-       final String schema = schemaService.getSchema(tenant);
+       final String schema = hibernateSchemaService.getTenantSchema(tenant);
 
        LOG.debug("Using schema '{}' with tenant of '{}'.", schema, tenant);
 

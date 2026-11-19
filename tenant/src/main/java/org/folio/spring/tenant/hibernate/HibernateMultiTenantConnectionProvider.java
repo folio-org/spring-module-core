@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import javax.sql.DataSource;
 import org.folio.spring.tenant.service.SchemaProvisionerService;
-import org.folio.spring.tenant.service.SchemaService;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
@@ -30,7 +29,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
   private final transient DataSource dataSource;
 
-  private final transient SchemaService schemaService;
+  private final transient HibernateSchemaService hibernateSchemaService;
 
   // Must use ObjectProvider because this class must be fully configured before the EntityManagerFactory required by SchemaProvisionerService may exist.
   private final transient ObjectProvider<SchemaProvisionerService> schemaProvisionerServiceObject;
@@ -43,13 +42,14 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
    * @param schemaProvisionerServiceObject An object provider for the schema provisioner service.
    */
   public HibernateMultiTenantConnectionProvider(
-    DataSource dataSource, SchemaService schemaService, ObjectProvider<SchemaProvisionerService> schemaProvisionerServiceObject
+    DataSource dataSource, HibernateSchemaService hibernateSchemaService,
+    ObjectProvider<SchemaProvisionerService> schemaProvisionerServiceObject
   ) {
 
     super();
 
     this.dataSource = dataSource;
-    this.schemaService = schemaService;
+    this.hibernateSchemaService = hibernateSchemaService;
     this.schemaProvisionerServiceObject = schemaProvisionerServiceObject;
   }
 
@@ -124,7 +124,7 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
   @SuppressWarnings("java:S2077") // SonarQube false positive, the query is protected by getSchema() in SchemaService and cannot produce SQL escapes.
   private void alterSchema(String tenant, Connection connection) {
 
-    final String schema = schemaService.getSchema(tenant);
+    final String schema = hibernateSchemaService.getTenantSchema(tenant);
 
     try {
       // Do nothing when schema NULL or blank.
