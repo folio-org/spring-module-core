@@ -60,14 +60,6 @@ public class HibernateMultiTenantConnectionProvider implements MultiTenantConnec
 
     LOG.debug("Requesting **ANY** connection, with thread local storage tenant of '{}'.", tenant);
 
-    /*
-    final Connection connection = dataSource.getConnection();
-
-    alterSchema(tenant, connection);
-
-    return connection;
-    */
-
     return dataSource.getConnection();
   }
 
