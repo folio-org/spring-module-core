@@ -85,7 +85,7 @@ public class HibernateSchemaDataSource implements DataSource {
     public void setLogWriter(PrintWriter out) throws SQLException {
       dataSource.setLogWriter(out);
     }
-    
+
     @Override
     public void setLoginTimeout(int seconds) throws SQLException {
       dataSource.setLoginTimeout(seconds);

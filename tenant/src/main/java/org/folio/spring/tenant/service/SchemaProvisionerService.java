@@ -2,10 +2,15 @@ package org.folio.spring.tenant.service;
 
 import static org.springframework.core.io.support.SpringFactoriesLoader.forDefaultResourceLocation;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.annotation.PreDestroy;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import org.folio.spring.tenant.config.SpringDataSourceConfig;
@@ -16,7 +21,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,9 +35,13 @@ public class SchemaProvisionerService {
 
   private final DataSource provisioningDataSource;
 
-  private final ConcurrentHashMap<String, Boolean> provisioned;
+  private final Set<String> provisioned;
 
   private final List<TenantDatabaseProvisioner> provisioners;
+
+  private final ConcurrentHashMap<String, Object> schemaLocks;
+
+  private final SchemaService schemaService;
 
   private final SpringDataSourceConfig springDatasourceConfig;
 
@@ -41,21 +49,28 @@ public class SchemaProvisionerService {
    * Initializer.
    *
    * @param applicationContext     The application context.
+   * @param schemaService          The schema service.
    * @param springDatasourceConfig The Spring data source configuration.
    */
-  public SchemaProvisionerService(ApplicationContext applicationContext, SpringDataSourceConfig springDatasourceConfig) {
+  public SchemaProvisionerService(ApplicationContext applicationContext, SchemaService schemaService, SpringDataSourceConfig springDatasourceConfig) {
 
     this.applicationContext = applicationContext;
+    this.schemaService = schemaService;
     this.springDatasourceConfig = springDatasourceConfig;
 
-    provisioned = new ConcurrentHashMap<>();
-    provisioners = new ArrayList<>();
+    // Pool size is exactly 2, one for the schema creation and one for the auto-schema creation.
+    final HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(this.springDatasourceConfig.getUrl());
+    config.setUsername(this.springDatasourceConfig.getUsername());
+    config.setPassword(this.springDatasourceConfig.getPassword());
+    config.setMaximumPoolSize(2);
+    config.setPoolName("WorkflowTenantProvisioning");
 
-    this.provisioningDataSource = new DriverManagerDataSource(
-      this.springDatasourceConfig.getUrl(),
-      this.springDatasourceConfig.getUsername(),
-      this.springDatasourceConfig.getPassword()
-    );
+    this.provisioningDataSource = new HikariDataSource(config);
+
+    provisioned = new HashSet<>();
+    provisioners = new ArrayList<>();
+    schemaLocks = new ConcurrentHashMap<>();
   }
 
   /**
@@ -74,10 +89,13 @@ public class SchemaProvisionerService {
         .load(
           TenantDatabaseProvisioner.class,
           ArgumentResolver
-            .of(ApplicationContext.class, this.applicationContext)
+            .of(ApplicationContext.class, applicationContext)
             .and(DataSource.class, provisioningDataSource)
+            .and(SchemaService.class, schemaService)
         )
     );
+
+    LOG.debug("Loaded {} privisioners.", provisioners.size());
   }
 
   /**
@@ -90,26 +108,40 @@ public class SchemaProvisionerService {
    */
   public void ensureProvisionedSchema(String schema, String tenant) {
 
-    if (provisioners.isEmpty()) {
-      return;
-    }
+    if (provisioned.contains(schema)) return;
 
-    final Iterator<TenantDatabaseProvisioner> iter = provisioners.iterator();
+    synchronized (schemaLocks.computeIfAbsent(schema, key -> new Object())) {
 
-    provisioned.computeIfAbsent(schema, key -> {
+      if (provisioned.contains(schema)) {
+        return;
+      }
+
       LOG.debug("Ensuring provisioned schema '{}' for tenant '{}', total provisioners is {}.", schema, tenant, provisioners.size());
+
+      final Iterator<TenantDatabaseProvisioner> iter = provisioners.iterator();
 
       try {
         while (iter.hasNext()) {
           iter.next()
             .provisionSchema(schema, tenant);
         }
-
-        return true;
       } catch (SQLException e) {
         throw new RuntimeException(String.format("Failed to provision a schema '%s' and tenant '%s'.", schema, tenant), e);
       }
-    });
+
+      provisioned.add(schema);
+    }
+  }
+
+  /**
+   * Clean up provisioning service, properly closing pooled connections.
+   */
+  @PreDestroy
+  public void preDestroy() {
+
+    if (provisioningDataSource.getClass().isInstance(HikariDataSource.class)) {
+      ((HikariDataSource) provisioningDataSource).close();
+    }
   }
 
 }
