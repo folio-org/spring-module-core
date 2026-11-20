@@ -36,6 +36,7 @@ public class HibernateMultiTenantConfig {
     return new BuildInfoProperties();
   }
 
+  /*
   @Bean
   HibernatePropertiesCustomizer multiTenantCustomizer(
     CurrentTenantIdentifierResolver<?> resolver,
@@ -46,7 +47,7 @@ public class HibernateMultiTenantConfig {
       hibernateProperties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, resolver);
       hibernateProperties.put(MULTI_TENANT_CONNECTION_PROVIDER, connectionProvider);
     };
-  }
+  }*/
 
   @Bean
   JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig() {
@@ -58,19 +59,16 @@ public class HibernateMultiTenantConfig {
     return new HibernateJpaVendorAdapter();
   }
 
+  /*
   @Bean
   @Primary
   LocalContainerEntityManagerFactoryBean entityManagerFactory(
     DataSource dataSource,
-    JpaProperties jpaProperties,
-    @SuppressWarnings("rawtypes") MultiTenantConnectionProvider multiTenantConnectionProvider,
-    @SuppressWarnings("rawtypes") CurrentTenantIdentifierResolver currentTenantIdentifierResolver
+    JpaProperties jpaProperties
   ) {
 
     final Map<String, Object> properties = new HashMap<>();
     properties.putAll(jpaProperties.getProperties());
-    properties.put(MULTI_TENANT_CONNECTION_PROVIDER, multiTenantConnectionProvider);
-    properties.put(MULTI_TENANT_IDENTIFIER_RESOLVER, currentTenantIdentifierResolver);
 
     // Remove the auto-prepended schema name and allow for the search_path to always take precedence.
     // For example, if `default_schema: apple` then a query might be `SELECT id from apple.fruits`.
@@ -85,7 +83,7 @@ public class HibernateMultiTenantConfig {
     em.setJpaPropertyMap(properties);
 
     return em;
-  }
+  }*/
 
   @Bean
   SpringDataSourceConfig springDataSourceConfig() {

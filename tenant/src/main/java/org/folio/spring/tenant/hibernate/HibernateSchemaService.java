@@ -1,5 +1,10 @@
 package org.folio.spring.tenant.hibernate;
 
+import static org.springframework.core.io.support.SpringFactoriesLoader.forDefaultResourceLocation;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.annotation.PreDestroy;
 import jakarta.persistence.Entity;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,15 +19,24 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.folio.spring.tenant.config.SpringDataSourceConfig;
 import org.folio.spring.tenant.exception.TenantAlreadyExistsException;
 import org.folio.spring.tenant.exception.TenantDoesNotExistsException;
+import org.folio.spring.tenant.interfaces.TenantDatabaseProvisioner;
 import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.service.SchemaService;
 import org.folio.spring.tenant.service.SqlTemplateService;
+import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -36,16 +50,19 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.hibernate.autoconfigure.HibernateProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.jpa.autoconfigure.JpaProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Service;
 
 /**
  * Hibernate schema service.
  */
-@Service("hibernateSchemaService")
+//@Service("hibernateSchemaService")
+@Service
 public class HibernateSchemaService implements InitializingBean {
 
   private static final Logger LOG = LoggerFactory.getLogger(HibernateSchemaService.class);
@@ -121,13 +138,22 @@ public class HibernateSchemaService implements InitializingBean {
   public static final String HIBERNATE_SHOWSQL = "hibernate.show-sql";
 
   /**
+   * Name of the data source pool for provisioning tenant specific schemas.
+   */
+  public static final String POOL_NAME = "TenantSchemaProvisioning";
+
+  /**
    * Hibernate query schema existence SQL query.
    *
    * This accepts a single argument for the query name.
    */
   public static final String QUERY_SCHEMA_EXISTS = "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ?)";
 
-  private final List<String> domainPackages = new ArrayList<String>();
+  private final ApplicationContext applicationContext;
+
+  private final Map<String, String> defaultSettings;
+
+  private final List<String> domainPackages;
 
   private final DataSourceProperties dataSourceProperties;
 
@@ -137,9 +163,19 @@ public class HibernateSchemaService implements InitializingBean {
 
   private final JpaProperties jpaProperties;
 
+  private final Set<String> provisioned;
+
+  private final List<TenantDatabaseProvisioner> provisioners;
+
+  private final DataSource provisioningDataSource;
+
   private final ResourceLoader resourceLoader;
 
+  private final ConcurrentHashMap<String, Object> schemaLocks;
+
   private final SchemaService schemaService;
+
+  private final SpringDataSourceConfig springDatasourceConfig;
 
   private final SqlTemplateService sqlTemplateService;
 
@@ -148,34 +184,55 @@ public class HibernateSchemaService implements InitializingBean {
   /**
    * Initializer.
    *
+   * @param applicationContext             The application context.
    * @param dataSourceProperties           The data source properties.
    * @param hibernateProperties            The Hibernate properties.
    * @param hibernateTenantInitializations The Hibernate tenant initializations.
    * @param jpaProperties                  The JPA properties.
    * @param resourceLoader                 The resource loader.
    * @param schemaService                  The schema service.
+   * @param springDatasourceConfig         The spring data source properties.
    * @param sqlTemplateService             The SQL template service.
    * @param tenantProperties               The tenant properties.
    */
   public HibernateSchemaService(
-    DataSourceProperties dataSourceProperties, HibernateProperties hibernateProperties,
+    ApplicationContext applicationContext, DataSourceProperties dataSourceProperties, HibernateProperties hibernateProperties,
     List<HibernateTenantInit> hibernateTenantInitializations, JpaProperties jpaProperties, ResourceLoader resourceLoader,
-    SchemaService schemaService, SqlTemplateService sqlTemplateService, TenantProperties tenantProperties
+    SchemaService schemaService, SpringDataSourceConfig springDatasourceConfig, SqlTemplateService sqlTemplateService, TenantProperties tenantProperties
   ) {
 
+    this.applicationContext = applicationContext;
     this.dataSourceProperties = dataSourceProperties;
     this.hibernateProperties = hibernateProperties;
     this.jpaProperties = jpaProperties;
     this.hibernateTenantInitializations = hibernateTenantInitializations == null ? new ArrayList<>() : hibernateTenantInitializations;
     this.resourceLoader = resourceLoader;
     this.schemaService = schemaService;
+    this.springDatasourceConfig = springDatasourceConfig;
     this.sqlTemplateService = sqlTemplateService;
     this.tenantProperties = tenantProperties;
+
+    domainPackages = new ArrayList<String>();
+    provisioned = new HashSet<>();
+    provisioners = new ArrayList<>();
+    schemaLocks = new ConcurrentHashMap<>();
+
+    // Ensure that there is always a tenant, even if it is the default.
+    ThreadLocalStorage.setTenant(tenantProperties.getDefaultTenant());
+    defaultSettings = getSettings(ThreadLocalStorage.getTenant());
+
+    this.provisioningDataSource = buildProvisioningDataSource();
+
+    loadProvisioners();
   }
 
   @Override
   public void afterPropertiesSet() throws Exception {
-    LOG.debug("Performing after properties set action for domain packages '{}'.", DOMAIN_PACKAGES);
+
+    final String tenant = ThreadLocalStorage.getTenant();
+    final String schema = schemaService.getSchema(tenant);
+
+    LOG.debug("Performing after properties set action for domain packages '{}' with tenant '{}' and schema '{}'.", DOMAIN_PACKAGES, tenant, schema);
 
     domainPackages.add(DOMAIN_PACKAGES);
 
@@ -184,20 +241,54 @@ public class HibernateSchemaService implements InitializingBean {
     }
 
     if (tenantProperties.isInitializeDefaultTenant()) {
-      final String tenant = tenantProperties.getDefaultTenant();
-      final Map<String, String> settings = getSettings(tenant);
-
-      try (Connection connection = getConnection(settings)) {
+      try (Connection connection = provisioningDataSource.getConnection()) {
         if (tenantProperties.isRecreateDefaultTenant()) {
-          if (schemaExists(connection, settings)) {
+          if (schemaExists(connection, schema)) {
             deleteTenant(tenant);
           }
 
-          initializeSchema(connection, settings);
-        } else if (!schemaExists(connection, settings)) {
-          initializeSchema(connection, settings);
+          ensureProvisionedSchema(schema, tenant);
+          //initializeSchema(connection, schema);
+        } else if (!schemaExists(connection, schema)) {
+          ensureProvisionedSchema(schema, tenant);
+          //initializeSchema(connection, schema);
         }
       }
+    }
+  }
+
+  /**
+   * Ensure that the given schema is properly provisioned.
+   *
+   * This calls all of the implementations of TenantDatabasProvisioner.
+   *
+   * @param schema The schema name.
+   * @param tenant The tenant name.
+   */
+  public void ensureProvisionedSchema(String schema, String tenant) {
+
+    if (provisioned.contains(schema)) return;
+
+    synchronized (schemaLocks.computeIfAbsent(schema, key -> new Object())) {
+
+      if (provisioned.contains(schema)) {
+        return;
+      }
+
+      LOG.debug("Ensuring provisioned schema '{}' for tenant '{}', total provisioners is {}.", schema, tenant, provisioners.size());
+
+      final Iterator<TenantDatabaseProvisioner> iter = provisioners.iterator();
+
+      try {
+        while (iter.hasNext()) {
+          iter.next()
+            .provisionSchema(schema, tenant);
+        }
+      } catch (SQLException e) {
+        throw new RuntimeException(String.format("Failed to provision a schema '%s' and tenant '%s'.", schema, tenant), e);
+      }
+
+      provisioned.add(schema);
     }
   }
 
@@ -210,14 +301,15 @@ public class HibernateSchemaService implements InitializingBean {
    * @throws IOException  On error.
    */
   public void createTenant(String tenant) throws SQLException, IOException {
-    final Map<String, String> settings = getSettings(tenant);
+    final String schema = schemaService.getSchema(tenant);
 
-    try (final Connection connection = getConnection(settings)) {
-      if (schemaExists(connection, settings)) {
+    try (final Connection connection = provisioningDataSource.getConnection()) {
+      if (schemaExists(connection, schema)) {
         throw new TenantAlreadyExistsException(String.format("Tenant '%s' already exists.", tenant));
       }
 
-      initializeSchema(connection, settings);
+      ensureProvisionedSchema(schema, tenant);
+      //initializeSchema(connection, schema);
     }
   }
 
@@ -229,15 +321,29 @@ public class HibernateSchemaService implements InitializingBean {
    * @throws SQLException On error.
    */
   public void deleteTenant(String tenant) throws SQLException {
-    final Map<String, String> settings = getSettings(tenant);
 
-    try (final Connection connection = getConnection(settings)) {
-      if (!schemaExists(connection, settings)) {
-        throw new TenantDoesNotExistsException(String.format("Tenant '%s' does not exist.", tenant));
+    final String schema = schemaService.getSchema(tenant);
+
+    try (final Connection connection = provisioningDataSource.getConnection()) {
+      if (!schemaExists(connection, schema)) {
+        throw new TenantDoesNotExistsException(String.format("Schema '%s' for tenant '%s' does not exist.", schema, tenant));
       }
 
-      dropSchema(connection, getSchema(settings));
+      dropSchema(connection, schema);
     }
+  }
+
+  /**
+   * Clean up provisioning service, properly closing pooled connections.
+   */
+  @PreDestroy
+  public void preDestroy() {
+
+    if (provisioningDataSource.getClass().isInstance(HikariDataSource.class)) {
+      ((HikariDataSource) provisioningDataSource).close();
+    }
+
+    ThreadLocalStorage.unload();
   }
 
   /**
@@ -250,10 +356,9 @@ public class HibernateSchemaService implements InitializingBean {
    * @throws SQLException On error.
    */
   public boolean schemaExists(String tenant) throws SQLException {
-    final Map<String, String> settings = getSettings(tenant);
 
-    try (final Connection connection = getConnection(settings)) {
-      return schemaExists(connection, settings);
+    try (final Connection connection = provisioningDataSource.getConnection()) {
+      return schemaExists(connection, tenant);
     }
   }
 
@@ -261,18 +366,17 @@ public class HibernateSchemaService implements InitializingBean {
    * Initialize the schema.
    *
    * @param connection The connection.
-   * @param settings   The data source settings.
+   * @param schema     The schema.
    *
    * @throws SQLException On error.
    * @throws IOException  On error.
    */
-  protected void initializeSchema(Connection connection, Map<String, String> settings) throws SQLException, IOException {
-    final String schema = getSchema(settings);
+  protected void initializeSchema(Connection connection, String schema) throws SQLException, IOException {
 
     LOG.debug("Initializing schema '{}'.", schema);
 
     createSchema(connection, schema);
-    createTables(settings);
+    createTables(schema);
     createAdditionalSchema(connection, schema);
     initializeData(connection, schema);
 
@@ -298,10 +402,10 @@ public class HibernateSchemaService implements InitializingBean {
   /**
    * Create tables.
    *
-   * @param settings The settings.
+   * @param schema The schema.
    */
-  protected void createTables(Map<String, String> settings) {
-    final MetadataImplementor metadata = buildMetadata(settings);
+  protected void createTables(String schema) {
+    final MetadataImplementor metadata = buildMetadata(schema);
 
     final SchemaExport schemaExport = new SchemaExport();
     schemaExport.create(EnumSet.of(TargetType.DATABASE), metadata);
@@ -370,16 +474,16 @@ public class HibernateSchemaService implements InitializingBean {
    * Check if the schema exists.
    *
    * @param connection The connection.
-   * @param settings   The settings.
+   * @param tenant     The tenant.
    *
    * @return TRUE if schema exists, FALSE otherwise.
    *
    * @throws SQLException On error.
    */
-  protected boolean schemaExists(Connection connection, Map<String, String> settings) throws SQLException {
+  protected boolean schemaExists(Connection connection, String tenant) throws SQLException {
 
     try (final PreparedStatement statement = connection.prepareStatement(QUERY_SCHEMA_EXISTS)) {
-      statement.setString(1, getSchema(settings));
+      statement.setString(1, schemaService.getSchema(tenant));
 
       final ResultSet resultSet = statement.executeQuery();
 
@@ -458,13 +562,13 @@ public class HibernateSchemaService implements InitializingBean {
   /**
    * Build the meta data.
    *
-   * @param settings The settings.
+   * @param schema The schema.
    *
    * @return The meta data implementor.
    */
-  protected MetadataImplementor buildMetadata(Map<String, String> settings) {
-    final Map<String, Object> settings2 = Map.copyOf(settings);
-    final StandardServiceRegistry registry = new StandardServiceRegistryBuilder().applySettings(settings2).build();
+  protected MetadataImplementor buildMetadata(String schema) {
+    final Map<String, Object> settings = Map.copyOf(defaultSettings);
+    final StandardServiceRegistry registry = new StandardServiceRegistryBuilder().applySettings(settings).build();
     final MetadataSources sources = addEntities(new MetadataSources(registry));
 
     return (MetadataImplementor) sources.getMetadataBuilder().build();
@@ -488,6 +592,51 @@ public class HibernateSchemaService implements InitializingBean {
     }
 
     return sources;
+  }
+
+
+  /**
+   * Populate the provisioners after everything is loaded.
+   */
+  private void loadProvisioners() {
+
+    provisioners.clear();
+
+    final List<TenantDatabaseProvisioner> classes = forDefaultResourceLocation(getClass().getClassLoader())
+      .load(
+        TenantDatabaseProvisioner.class,
+        ArgumentResolver
+          .of(ApplicationContext.class, applicationContext)
+          .and(DataSource.class, provisioningDataSource)
+          .and(SchemaService.class, schemaService)
+      );
+
+    provisioners.addAll(classes);
+
+    final String names = classes.stream()
+      .map(tdp -> tdp.getClass().getSimpleName())
+      .collect(Collectors.joining(", "));
+
+    LOG.debug("Loaded {} privisioners: {}.", provisioners.size(), names);
+  }
+
+  /**
+   * Build the provisoning data source.
+   *
+   * @return The built data source.
+   */
+  private DataSource buildProvisioningDataSource() {
+
+    // Pool size is exactly 2, one for the schema creation and one for the auto-schema creation.
+    final HikariConfig config = new HikariConfig();
+    config.setDriverClassName(defaultSettings.get(CONNECTION_DRIVER_CLASS));
+    config.setJdbcUrl(springDatasourceConfig.getUrl());
+    config.setMaximumPoolSize(2);
+    config.setPassword(springDatasourceConfig.getPassword());
+    config.setPoolName(POOL_NAME);
+    config.setUsername(springDatasourceConfig.getUsername());
+
+    return new HikariDataSource(config);
   }
 
 }

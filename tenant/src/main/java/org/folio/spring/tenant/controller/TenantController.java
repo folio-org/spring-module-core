@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/_/tenant")
 public class TenantController {
 
-  private HibernateSchemaService hibernateSchemaService;
+  private final HibernateSchemaService hibernateSchemaService;
 
   /**
    * Initializer.
