@@ -8,8 +8,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.withSettings;
 import static org.mockito.quality.Strictness.LENIENT;
 
+import org.folio.spring.tenant.config.TenantConfig;
 import org.folio.spring.tenant.exception.NoTenantHeaderException;
-import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +38,7 @@ public class HibernateTenantIdentifierResolverTest {
   private MockedStatic<RequestContextHolder> requestContextHolder;
 
   @Mock
-  private TenantProperties tenantProperties;
+  private TenantConfig tenantConfig;
 
   @InjectMocks
   private HibernateTenantIdentifierResolver tenantIdentifierResolver;
@@ -54,8 +54,8 @@ public class HibernateTenantIdentifierResolverTest {
     threadLocalStorage = mockStatic(ThreadLocalStorage.class, withSettings().strictness(LENIENT));
     requestContextHolder = mockStatic(RequestContextHolder.class, withSettings().strictness(LENIENT));
 
-    lenient().when(tenantProperties.getHeaderName()).thenReturn(TENANT_HEADER_NAME);
-    lenient().when(tenantProperties.getDefaultTenant()).thenReturn(TENANT_DEFAULT);
+    lenient().when(tenantConfig.getHeaderName()).thenReturn(TENANT_HEADER_NAME);
+    lenient().when(tenantConfig.getDefaultTenant()).thenReturn(TENANT_DEFAULT);
   }
 
   @AfterEach
@@ -90,7 +90,7 @@ public class HibernateTenantIdentifierResolverTest {
     lenient().when(servletRequestAttributes.getRequest()).thenReturn(httpServletRequest);
     lenient().when(httpServletRequest.getHeader(eq(TENANT_HEADER_NAME))).thenReturn(null);
 
-    lenient().when(tenantProperties.isForceTenant()).thenReturn(Boolean.FALSE);
+    lenient().when(tenantConfig.isForceTenant()).thenReturn(Boolean.FALSE);
 
     final String tenant = tenantIdentifierResolver.resolveCurrentTenantIdentifier();
 
@@ -103,7 +103,7 @@ public class HibernateTenantIdentifierResolverTest {
     lenient().when(servletRequestAttributes.getRequest()).thenReturn(httpServletRequest);
     lenient().when(httpServletRequest.getHeader(eq(TENANT_HEADER_NAME))).thenReturn(null);
 
-    lenient().when(tenantProperties.isForceTenant()).thenReturn(Boolean.TRUE);
+    lenient().when(tenantConfig.isForceTenant()).thenReturn(Boolean.TRUE);
 
     assertThrows(NoTenantHeaderException.class, () -> {
       tenantIdentifierResolver.resolveCurrentTenantIdentifier();

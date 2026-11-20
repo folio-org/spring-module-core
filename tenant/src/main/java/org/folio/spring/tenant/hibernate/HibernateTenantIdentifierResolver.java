@@ -2,8 +2,8 @@ package org.folio.spring.tenant.hibernate;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
+import org.folio.spring.tenant.config.TenantConfig;
 import org.folio.spring.tenant.exception.NoTenantHeaderException;
-import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.storage.ThreadLocalStorage;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.context.annotation.DependsOn;
@@ -16,9 +16,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @DependsOn("hibernateSchemaService")
 public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
 
-  private final TenantProperties tenantProperties;
+  private final TenantConfig tenantProperties;
 
-  public HibernateTenantIdentifierResolver(TenantProperties tenantProperties) {
+  public HibernateTenantIdentifierResolver(TenantConfig tenantProperties) {
     this.tenantProperties = tenantProperties;
   }
 
@@ -29,27 +29,26 @@ public class HibernateTenantIdentifierResolver implements CurrentTenantIdentifie
 
   @Override
   public String resolveCurrentTenantIdentifier() {
+
     final HttpServletRequest request = getRequestFromContext();
 
+    String tenant = ThreadLocalStorage.getTenant();
+
     if (request == null) {
-      final String tenant = ThreadLocalStorage.getTenant();
-
-      if (tenant != null) {
-        return tenant;
-      }
+      ThreadLocalStorage.getTenant();
     } else {
-      final String tenant = request.getHeader(tenantProperties.getHeaderName());
-
-      if (tenant != null) {
-        return tenant;
-      }
+      tenant = request.getHeader(tenantProperties.getHeaderName());
 
       if (tenantProperties.isForceTenant()) {
         throw new NoTenantHeaderException("No tenant header on request!");
       }
     }
 
-    return tenantProperties.getDefaultTenant();
+    if (tenant == null || tenant.isBlank()) {
+      tenant = tenantProperties.getDefaultTenant();
+    }
+
+    return tenant;
   }
 
   @Override

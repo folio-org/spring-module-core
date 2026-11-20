@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.folio.spring.tenant.config.TenantConfig;
 import org.folio.spring.tenant.exception.TenantAlreadyExistsException;
 import org.folio.spring.tenant.exception.TenantDoesNotExistsException;
-import org.folio.spring.tenant.properties.TenantProperties;
 import org.folio.spring.tenant.service.SchemaService;
 import org.folio.spring.tenant.service.SqlTemplateService;
 import org.hibernate.boot.MetadataSources;
@@ -64,7 +64,7 @@ public class HibernateSchemaService implements InitializingBean {
   private SchemaService schemaService;
 
   @Autowired
-  private TenantProperties tenantProperties;
+  private TenantConfig tenantProperties;
 
   @Autowired
   private SqlTemplateService sqlTemplateService;
@@ -83,6 +83,10 @@ public class HibernateSchemaService implements InitializingBean {
 
   @Autowired(required = false)
   private List<HibernateTenantInit> hibernateTenantInitializations = new ArrayList<>();
+
+  HibernateSchemaService() {
+    
+  }
 
   @Override
   public void afterPropertiesSet() throws Exception {

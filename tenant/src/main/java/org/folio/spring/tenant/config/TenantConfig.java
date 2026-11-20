@@ -1,4 +1,4 @@
-package org.folio.spring.tenant.properties;
+package org.folio.spring.tenant.config;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "tenant")
-public class TenantProperties implements Serializable {
+public class TenantConfig implements Serializable {
 
   private static final long serialVersionUID = -4623270335202728322L;
 

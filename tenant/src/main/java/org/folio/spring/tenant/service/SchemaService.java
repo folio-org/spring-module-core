@@ -3,8 +3,7 @@ package org.folio.spring.tenant.service;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.folio.spring.tenant.config.JpaPropertiesHibernateConfig;
-import org.folio.spring.tenant.properties.BuildInfoProperties;
-import org.folio.spring.tenant.properties.TenantProperties;
+import org.folio.spring.tenant.config.TenantConfig;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,22 +12,19 @@ public class SchemaService {
   // Allow list of characters prevents SQL injection.
   private static final Pattern SCHEMA_REGEXP = Pattern.compile("[a-z0-9_]+");
 
-  private final BuildInfoProperties buildInfoProperties;
-
   private final JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig;
 
-  private final TenantProperties tenantProperties;
+  private final TenantConfig tenantConfig;
 
   /**
    * Initialize class.
    *
    * @param buildInfoProperties
    */
-  public SchemaService(BuildInfoProperties buildInfoProperties, JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig, TenantProperties tenantProperties) {
+  public SchemaService(JpaPropertiesHibernateConfig jpaPropertiesHibernateConfig, TenantConfig tenantConfig) {
 
-    this.buildInfoProperties = buildInfoProperties;
     this.jpaPropertiesHibernateConfig = jpaPropertiesHibernateConfig;
-    this.tenantProperties = tenantProperties;
+    this.tenantConfig = tenantConfig;
   }
 
   /**
@@ -36,8 +32,6 @@ public class SchemaService {
    *
    * This generation relies on the `spring.jpa.properties.hibernate.default_schema` property handled by `JpaConfig`, using the provided value as a base for the schema name.
    * The tenant value is then prepended to the base schema.
-   *
-   * When no schema is provided, the format will default to the project artifact handled by `BuildInfoProperties`.
    *
    * When no tenant is provided, the format will instead utilize the "default" tenant handled by `TenantProperties` (`tenant.default-tenant`).
    *
@@ -48,14 +42,14 @@ public class SchemaService {
   public String getSchema(String tenant) {
 
     if (tenant == null || tenant.trim().isEmpty()) {
-      tenant = tenantProperties.getDefaultTenant();
+      tenant = tenantConfig.getDefaultTenant();
     }
 
-    final String folioBaseSchema = jpaPropertiesHibernateConfig.getDefaultSchema();
-
-    final String baseSchema = (folioBaseSchema == null || folioBaseSchema.trim().isEmpty())
-      ? buildInfoProperties.getArtifact()
-      : folioBaseSchema;
+    final String baseSchema = jpaPropertiesHibernateConfig.getDefaultSchema();
+    
+    if (baseSchema == null || baseSchema.trim().isEmpty()) {
+      throw new IllegalArgumentException("The base schema is not and must be defined, such as via DB_SCHEMA.");
+    }
 
     final String schemaName = String.format("%s_%s", tenant, baseSchema).replace("-", "_").toLowerCase(Locale.ROOT);
 

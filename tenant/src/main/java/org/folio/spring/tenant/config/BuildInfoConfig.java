@@ -1,4 +1,4 @@
-package org.folio.spring.tenant.properties;
+package org.folio.spring.tenant.config;
 
 import java.io.Serializable;
 
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "info.build")
-public class BuildInfoProperties implements Serializable {
+public class BuildInfoConfig implements Serializable {
 
   private static final long serialVersionUID = -7137553746347037879L;
 

@@ -4,9 +4,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.folio.spring.tenant.config.BuildInfoConfig;
 import org.folio.spring.tenant.config.JpaPropertiesHibernateConfig;
-import org.folio.spring.tenant.properties.BuildInfoProperties;
-import org.folio.spring.tenant.properties.TenantProperties;
+import org.folio.spring.tenant.config.TenantConfig;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,7 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(classes = { SchemaService.class })
-@EnableConfigurationProperties(value = { BuildInfoProperties.class, JpaPropertiesHibernateConfig.class, TenantProperties.class })
+@EnableConfigurationProperties(value = { BuildInfoConfig.class, JpaPropertiesHibernateConfig.class, TenantConfig.class })
 @TestPropertySource(properties = {
    "info.build.artifact=mod-Baz",
    "tenant.default-tenant=FooBar321"
