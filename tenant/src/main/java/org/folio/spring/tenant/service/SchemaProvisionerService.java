@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.folio.spring.tenant.config.SpringDataSourceConfig;
 import org.folio.spring.tenant.interfaces.TenantDatabaseProvisioner;
@@ -84,18 +85,22 @@ public class SchemaProvisionerService {
 
     provisioners.clear();
 
-    provisioners.addAll(
-      forDefaultResourceLocation(getClass().getClassLoader())
-        .load(
-          TenantDatabaseProvisioner.class,
-          ArgumentResolver
-            .of(ApplicationContext.class, applicationContext)
-            .and(DataSource.class, provisioningDataSource)
-            .and(SchemaService.class, schemaService)
-        )
-    );
+    final List<TenantDatabaseProvisioner> classes = forDefaultResourceLocation(getClass().getClassLoader())
+      .load(
+        TenantDatabaseProvisioner.class,
+        ArgumentResolver
+          .of(ApplicationContext.class, applicationContext)
+          .and(DataSource.class, provisioningDataSource)
+          .and(SchemaService.class, schemaService)
+      );
 
-    LOG.debug("Loaded {} privisioners.", provisioners.size());
+    provisioners.addAll(classes);
+
+    final String names = classes.stream()
+      .map(tdp -> tdp.getClass().getSimpleName())
+      .collect(Collectors.joining(", "));
+
+    LOG.debug("Loaded {} privisioners: {}.", provisioners.size(), names);
   }
 
   /**
